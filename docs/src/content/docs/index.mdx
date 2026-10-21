@@ -1,0 +1,58 @@
+---
+title: sveltedown
+description: A live-preview Markdown editor for Svelte 5, built on CodeMirror 6.
+template: splash
+hero:
+  tagline: A live-preview Markdown editor for Svelte 5. The document stays plain Markdown; the syntax steps aside while you write.
+  actions:
+    - text: Get started
+      link: getting-started/installation/
+      icon: right-arrow
+    - text: Theming
+      link: guides/theming/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import EditorDemo from '../../components/demos/EditorDemo.svelte';
+
+<EditorDemo
+	client:load
+	height="26rem"
+	value={`# Try it
+
+Click into this text. Syntax like **bold**, *italic* and [links](https://svelte.dev) shows as you move into it, and hides again when you move away.
+
+- [x] Task lists with real checkboxes
+- [ ] Press Enter here to add another
+
+| Feature | Shortcut |
+|:--|--:|
+| **Bold** | \`Mod-b\` |
+| Link | \`Mod-k\` |
+
+\`\`\`ts
+const editor = 'sveltedown'; // long lines scroll instead of wrapping
+\`\`\`
+`}
+/>
+
+## Features
+
+<CardGrid>
+	<Card title="Live preview" icon="pencil">
+		Headings, emphasis, inline code and links render in place. Their syntax shows only where the
+		cursor is.
+	</Card>
+	<Card title="Rich blocks" icon="puzzle">
+		Images, clickable task checkboxes, code blocks with copy, and GFM tables, all as Svelte
+		components.
+	</Card>
+	<Card title="Svelte 5 native" icon="seti:svelte">
+		`bind:value`, runes and snippets. Renders on the server in SvelteKit without touching the
+		DOM.
+	</Card>
+	<Card title="Themeable" icon="seti:css">
+		Every colour, font and size is a CSS variable, with light and dark modes built in.
+	</Card>
+</CardGrid>

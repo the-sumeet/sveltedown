@@ -1,0 +1,133 @@
+---
+title: Theming
+description: Customise colours, fonts and individual elements with CSS variables and classes.
+---
+
+import ThemeDemo from '../../../components/demos/ThemeDemo.svelte';
+
+There are four ways to customise the editor, from simplest to most powerful.
+
+<ThemeDemo client:visible />
+
+The CSS under the editor is exactly the rule being applied. Copy it into your app.
+
+## 1. CSS variables
+
+Everything the editor draws reads a `--md-*` variable. Set them on the editor element:
+
+```css
+.sveltedown {
+	--md-font-family: 'Inter', sans-serif;
+	--md-font-size: 17px;
+	--md-padding: 2rem 3rem;
+	--md-link-color: #d6336c;
+	--md-code-block-bg: #fdf6e3;
+}
+```
+
+:::caution[Set variables on the editor, not an ancestor]
+The defaults are declared on the editor element itself, so values set on `body` or `:root` don't reach it. Target `.sveltedown`, or a class you pass in (below).
+:::
+
+| Variable | Controls | Default (light / dark) |
+|---|---|---|
+| `--md-font-family` | Prose font | system UI font |
+| `--md-font-mono` | Code font | `ui-monospace`, … |
+| `--md-font-size` | Base size | `16px` |
+| `--md-line-height` | Prose line height | `1.6` |
+| `--md-padding` | Space around the content | `0.75rem 1rem` |
+| `--md-text` | Text | `#1f2328` / `#e6edf3` |
+| `--md-bg` | Background | `#ffffff` / `#0d1117` |
+| `--md-muted` | Revealed syntax, quotes, code block labels | `#6e7781` / `#8b949e` |
+| `--md-heading-color` | Headings | `#0f1419` / `#f0f6fc` |
+| `--md-link-color` | Links | `#0969da` / `#4493f8` |
+| `--md-accent` | Checkboxes | `#0969da` / `#4493f8` |
+| `--md-code-bg` | Inline code | translucent grey |
+| `--md-code-block-bg` | Code blocks, table headers | `#f6f8fa` / `#161b22` |
+| `--md-border` | Rules, table borders, buttons | `#d0d7de` / `#30363d` |
+| `--md-selection` | Selection | translucent blue |
+| `--md-caret` | Caret | `var(--md-text)` |
+
+To give a variable separate light and dark values, use `light-dark()` as the defaults do:
+
+```css
+.sveltedown {
+	--md-link-color: light-dark(#d6336c, #ff8cc6);
+}
+```
+
+## 2. Per-instance styling with `class`
+
+```svelte
+<MarkdownEditor bind:value class="notes-editor" />
+```
+
+```css
+.notes-editor {
+	--md-font-size: 14px;
+	--md-padding: 0.5rem;
+}
+```
+
+## 3. Element classes
+
+Every rendered element has a stable class you can target:
+
+| Class | Element |
+|---|---|
+| `.cm-md-heading`, `.cm-md-h1` … `.cm-md-h6` | Heading lines |
+| `.cm-md-strong`, `.cm-md-em`, `.cm-md-strikethrough` | Inline emphasis |
+| `.cm-md-code` | Inline code |
+| `.cm-md-link` | Link text |
+| `.cm-md-image`, `.cm-md-image-error` | Image wrapper, failed-load placeholder |
+| `.cm-md-task`, `.cm-md-checkbox` | Task checkbox |
+| `.cm-md-hr` | Horizontal rule |
+| `.cm-md-codeblock-widget`, `.cm-md-code-header`, `.cm-md-code-lang`, `.cm-md-code-copy`, `.cm-md-code-pre` | Rendered code block |
+| `.cm-md-codeblock` (with `-begin` / `-end`) | Code lines while editing |
+| `.cm-md-table`, `.cm-md-table-scroll` | Rendered table and its scroll box |
+| `.cm-md-table-line` | Table rows while editing |
+| `.cm-editor`, `.cm-content`, `.cm-line`, `.cm-placeholder` | CodeMirror's own elements |
+
+Prefix your selectors with the editor class. The built-in rules have the specificity of two classes, but CodeMirror inserts its styles at the top of `<head>`, so your rule wins when it matches that specificity:
+
+```css
+.sveltedown .cm-md-h1 {
+	font-family: 'Playfair Display', serif;
+	letter-spacing: -0.02em;
+}
+.sveltedown .cm-md-link {
+	text-decoration: none;
+	border-bottom: 1px dotted;
+}
+.sveltedown .cm-md-code-copy {
+	display: none;
+}
+```
+
+A bare `.cm-md-h1 { … }` loses. Inside a Svelte component's `<style>`, wrap the editor's classes in `:global()`, because they are created outside your component:
+
+```svelte
+<div class="wrap"><MarkdownEditor bind:value /></div>
+
+<style>
+	.wrap :global(.cm-md-h1) {
+		color: tomato;
+	}
+</style>
+```
+
+## 4. CodeMirror themes
+
+Pass a CodeMirror theme through the `extensions` prop. These rules load after the built-in ones and outrank them:
+
+```ts
+import { EditorView } from '@codemirror/view';
+
+const extensions = [EditorView.theme({ '.cm-md-h2': { textTransform: 'uppercase' } })];
+```
+
+## Light and dark mode
+
+By default the editor follows the system setting. To force a mode, put `data-theme="light"` or `data-theme="dark"` on the editor or any ancestor, such as `<html>`. The nearest one wins.
+
+This sets `color-scheme` on that element, which also themes native controls inside it (scrollbars, checkboxes). This site's theme switcher works that way: the demos switch with it.

@@ -1,0 +1,60 @@
+---
+title: Quick start
+description: Render an editor, bind its value and react to changes.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+## A bound editor
+
+```svelte
+<script lang="ts">
+	import { MarkdownEditor } from 'sveltedown';
+
+	let value = $state('# Hello\n\nStart **writing**…');
+</script>
+
+<MarkdownEditor bind:value placeholder="Start writing…" />
+```
+
+`value` is always the plain Markdown text. Type in the editor and `value` updates; assign to `value` from your code and the editor updates.
+
+<EditorDemo client:visible showSource value={'# Hello\n\nStart **writing**…'} />
+
+Edit either side: the editor and the Markdown source below it are bound to the same state.
+
+## Reacting to edits
+
+`onchange` is called with the new Markdown after each edit made in the editor:
+
+```svelte
+<MarkdownEditor bind:value onchange={(markdown) => save(markdown)} />
+```
+
+It is **not** called when you set `value` from your own code, so saving on change never loops.
+
+## Updating from outside
+
+Assigning a new `value` replaces only the part of the document that changed, so the user's cursor and undo history elsewhere are kept:
+
+```svelte
+<button onclick={() => (value += '\n\nAppended from outside.')}>Append</button>
+```
+
+## Read-only
+
+```svelte
+<MarkdownEditor {value} readonly />
+```
+
+A read-only editor renders everything and never reveals syntax. Links open with a plain click, and task checkboxes can't be toggled.
+
+## Server-side rendering
+
+The component is safe to render on the server in SvelteKit. The server outputs an empty container, and CodeMirror is created in the browser when the component mounts. You don't need `{#if browser}` guards or `ssr = false`.
+
+## Next
+
+- [Live preview](../../guides/live-preview/): what hides, and when.
+- [Theming](../../guides/theming/): make it match your app.
+- [Props](../../reference/props/): everything the component accepts.

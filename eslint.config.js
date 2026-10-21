@@ -10,6 +10,8 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
+	// The docs site is its own Astro project with its own checks.
+	{ ignores: ['docs/'] },
 	js.configs.recommended,
 	ts.configs.recommended,
 	svelte.configs.recommended,

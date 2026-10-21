@@ -1,0 +1,50 @@
+---
+title: Installation
+description: Add sveltedown to a Svelte 5 or SvelteKit project.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Install the package
+
+<Tabs syncKey="pkg">
+	<TabItem label="npm">
+
+```sh
+npm install sveltedown
+```
+
+	</TabItem>
+	<TabItem label="pnpm">
+
+```sh
+pnpm add sveltedown
+```
+
+	</TabItem>
+	<TabItem label="yarn">
+
+```sh
+yarn add sveltedown
+```
+
+	</TabItem>
+</Tabs>
+
+`svelte@^5` is a peer dependency. CodeMirror and the Markdown parser are installed with the package; you don't add them yourself.
+
+## Styles
+
+`MarkdownEditor` imports its own stylesheet, so there is nothing else to include. If you build your own editor from the [CodeMirror building blocks](../../guides/codemirror/) instead of using the component, import the stylesheet yourself:
+
+```ts
+import 'sveltedown/editor.css';
+```
+
+## Browser support
+
+The default colours use the CSS [`light-dark()`](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/light-dark) function, which needs Chrome 123+, Firefox 120+ or Safari 17.5+. You can override every colour with your own values; see [Theming](../../guides/theming/).
+
+## Next
+
+Continue with the [quick start](../quick-start/).

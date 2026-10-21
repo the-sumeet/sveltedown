@@ -24,3 +24,8 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 # Playwright
 test-results
+
+# Docs site
+/docs/node_modules
+/docs/dist
+/docs/.astro

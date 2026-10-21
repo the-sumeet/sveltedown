@@ -1,0 +1,67 @@
+---
+title: Live preview
+description: What the editor renders, what it hides, and when the Markdown source shows.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+The document is always plain Markdown. sveltedown decorates it as you type: syntax that isn't near the cursor is hidden and its content is styled, and some elements become interactive widgets.
+
+<EditorDemo
+	client:visible
+	height="22rem"
+	value={`# Heading
+
+Some **bold**, *italic*, ~~struck~~ and \`inline code\`, plus a [link](https://svelte.dev "Svelte").
+
+- [x] A finished task
+- [ ] Click a checkbox to toggle it
+
+---
+
+![Svelte logo](%BASE%/logo.svg "Click the image to edit its source")
+`}
+/>
+
+## When the source shows
+
+An element's Markdown syntax is revealed when **all** of these hold:
+
+1. The cursor or selection touches the element. A cursor right before or after `**bold**` counts, so arrow keys reveal the markers as soon as you reach them.
+2. The editor has focus. Click outside the editor and everything renders again; on page load nothing is revealed.
+3. The editor is editable. A `readonly` editor never reveals syntax.
+
+Moving away hides the syntax again. Only the element at the cursor changes, so the rest of the document stays rendered while you edit.
+
+## Inline elements
+
+| Markdown | Renders as | Source shows when |
+|---|---|---|
+| `# Heading` … `###### Heading` | Sized heading, without the `#`s | The cursor is on the heading's line |
+| `**bold**`, `*italic*`, `~~struck~~` | Styled text | The cursor touches the element |
+| `` `code` `` | Monospace with a background | The cursor touches the element |
+| `[text](url "title")` | Underlined link text | The cursor touches the link |
+
+Reference-style links (`[text][ref]`) stay as source.
+
+## Links
+
+A plain click places the cursor in the link, which reveals its source for editing. **Mod-click** (Cmd on macOS, Ctrl elsewhere) opens it in a new tab. In a read-only editor a plain click opens it.
+
+Only `http`, `https` and `mailto` links open, so a `javascript:` URL in a document can't run. Angle-bracket destinations (`[a](<my page.html>)`) and backslash escapes are decoded.
+
+## Images
+
+`![alt](src "title")` renders the image. Clicking it moves the cursor into its source so you can edit the URL or alt text. If the image fails to load, a placeholder shows the alt text. You can [render images yourself](../custom-snippets/) with `imageSnippet`.
+
+## Task lists
+
+`- [ ]` and `- [x]` render as checkboxes. Clicking one rewrites the Markdown between `[ ]` and `[x]`. Checkboxes always render, even at the cursor. Press Enter at the end of a task to start a new one.
+
+## Horizontal rules
+
+`---` renders as a rule away from the cursor.
+
+## Code blocks and tables
+
+Fenced code blocks and GFM tables render as their own widgets. See [Code blocks](../code-blocks/) and [Tables](../tables/).

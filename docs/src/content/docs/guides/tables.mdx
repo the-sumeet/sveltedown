@@ -1,0 +1,64 @@
+---
+title: Tables
+description: GFM tables rendered as HTML tables, with a command that lines up their source.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+<EditorDemo
+	client:visible
+	height="18rem"
+	showSource
+	value={`| Feature | Status | Shortcut |
+|:--|:-:|--:|
+| **Bold** | done | \`Mod-b\` |
+| [Links](https://svelte.dev) | done | \`Mod-k\` |
+| Format this table | try it | \`Mod-Shift-f\` |
+
+Click a cell, then press Mod-Shift-f to line up the pipes.
+`}
+/>
+
+## Rendered
+
+Away from the cursor, a GitHub-flavoured Markdown table renders as an HTML table:
+
+- the header row from the first line
+- column alignment from the delimiter row: `:--` left, `:-:` centre, `--:` right
+- bold, italic, strikethrough, inline code and links rendered inside cells
+- escaped pipes (`a\|b`) shown as `a|b`
+
+Rows with fewer cells than the header are padded; extra cells are ignored, as on GitHub.
+
+## Editing
+
+Clicking a cell switches the table to its raw rows, with the cursor on the character you clicked. While editing, rows show in monospace and don't wrap, so the pipes can line up. Home and End go to the real ends of a row.
+
+Mod-click a link inside a cell to open it; in a read-only editor a plain click opens it.
+
+## Formatting the source
+
+Press **Mod-Shift-f** with the cursor in a table to pad every cell so the pipes line up:
+
+```md
+| Feature           | Status |      Shortcut |
+| :---------------- | :----: | ------------: |
+| **Bold**          |  done  |       `Mod-b` |
+```
+
+- Each column is padded to its widest cell, and right-aligned or centred columns are padded to match.
+- The cursor stays in the same cell.
+- `>` and list prefixes are kept, so tables in quotes and lists format too.
+- Cells beyond the header's columns are kept, never deleted.
+
+Outside a table the shortcut does nothing, and the browser keeps it.
+
+The command is exported as `formatTable` if you want to bind it elsewhere; see [CodeMirror building blocks](../codemirror/).
+
+## Wide tables
+
+A table with many columns keeps its headers on one line and scrolls sideways inside its own box. Body cells wrap between words. The rest of the document doesn't move.
+
+## Customising
+
+Render tables with your own component through `tableSnippet`; see [Custom snippets](../custom-snippets/#tables). Style the built-in table with the `.cm-md-table` classes; see [Theming](../theming/#element-classes).

@@ -1,0 +1,99 @@
+---
+title: CodeMirror building blocks
+description: Extend the editor with CodeMirror extensions, or assemble your own from sveltedown's parts.
+---
+
+sveltedown is built from ordinary [CodeMirror 6](https://codemirror.net/) extensions, and they are all exported. Use them to extend the component, or to build your own editor without it.
+
+## Adding extensions to the component
+
+The `extensions` prop takes any CodeMirror extensions. They are added after the built-in ones and can be changed at any time:
+
+```svelte
+<script lang="ts">
+	import { MarkdownEditor } from 'sveltedown';
+	import { EditorView, keymap } from '@codemirror/view';
+
+	const extensions = [
+		EditorView.theme({ '.cm-md-h1': { color: 'tomato' } }),
+		keymap.of([{ key: 'Mod-s', run: () => (save(), true) }])
+	];
+</script>
+
+<MarkdownEditor bind:value {extensions} />
+```
+
+Import from `@codemirror/*` packages at the versions sveltedown uses, so there is only one copy of each.
+
+## Building your own editor
+
+`coreExtensions()` is everything the component uses, minus the per-instance settings. Pieces you can use separately:
+
+| Export | What it adds |
+|---|---|
+| `inlineLivePreview()` | Headings, emphasis, inline code and links, hidden away from the cursor |
+| `blockWidgets()` | Images, checkboxes, rules, code blocks and tables as widgets |
+| `markdownTheme()` | The editor's look, driven by the `--md-*` variables |
+| `editorKeymaps()` | Formatting shortcuts plus CodeMirror's default and undo keymaps |
+| `focusTracking()` | Reveal syntax only while focused. Without it, the cursor alone decides |
+
+```ts
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
+import { inlineLivePreview, blockWidgets, markdownTheme, focusTracking } from 'sveltedown';
+import 'sveltedown/editor.css';
+
+const view = new EditorView({
+	parent: document.querySelector('#editor')!,
+	state: EditorState.create({
+		doc: '# Hello',
+		extensions: [
+			markdown({ base: markdownLanguage }),
+			focusTracking(),
+			inlineLivePreview(),
+			blockWidgets(),
+			markdownTheme()
+		]
+	})
+});
+```
+
+Put the editor inside an element with the `sveltedown` class so the default variables apply.
+
+## Commands
+
+Use these in your own keymaps or toolbar buttons. Each one takes `{ state, dispatch }`, so you can pass an `EditorView`:
+
+| Command | Does |
+|---|---|
+| `toggleBold`, `toggleItalic`, `toggleStrikethrough` | Wrap or unwrap the selection or word |
+| `toggleWrap(marker)` | The same for any marker |
+| `insertLink` | `[text](url)` with `url` selected |
+| `formatTable` | Line up the pipes of the table at the cursor |
+| `toggleTask(state, pos)` | Returns the transaction that flips the task at `pos` |
+
+```svelte
+<button onclick={() => toggleBold(view)}>Bold</button>
+```
+
+## Svelte widgets
+
+`SvelteWidget` is a CodeMirror `WidgetType` that mounts a Svelte 5 component. The component receives your props plus `view`. Prop changes update it in place rather than remounting, and it is unmounted when CodeMirror removes the widget.
+
+```ts
+import { Decoration } from '@codemirror/view';
+import { SvelteWidget } from 'sveltedown';
+import Mention from './Mention.svelte';
+
+const widget = new SvelteWidget(Mention, { user: 'ada' }, { class: 'mention' });
+const deco = Decoration.replace({ widget });
+```
+
+Pass `{ block: true }` in the options for a block-level widget (a `div` wrapper). Buttons, inputs and links inside the component keep their own events; other clicks move the editor's cursor.
+
+## Without Svelte's component
+
+`createEditor()` is the framework-agnostic setup the component wraps. It returns a controller with `setDoc`, `setReadonly`, `setPlaceholder`, `setExtensions`, `setSnippets` and `destroy`. Redundant calls are cheap: a value the editor already has dispatches nothing.
+
+See the [API reference](../../reference/api/) for every export.

@@ -1,0 +1,109 @@
+---
+title: Custom snippets
+description: Render images, code block headers and tables with your own Svelte markup.
+---
+
+import SnippetDemo from '../../../components/demos/SnippetDemo.svelte';
+
+Three parts of the editor can be replaced with a Svelte 5 [snippet](https://svelte.dev/docs/svelte/snippet). A snippet can render anything, including your own components. Its props update in place as the document changes.
+
+Each snippet also receives `view`, the CodeMirror `EditorView`. If your content changes size after it renders (an image loading, a diagram drawing), call `view.requestMeasure()` so cursor positions stay accurate.
+
+Clicking a snippet's content moves the cursor into the Markdown source, as with the built-in widgets. Buttons, inputs and links inside it keep their own clicks.
+
+## Images
+
+```svelte
+<MarkdownEditor bind:value>
+	{#snippet imageSnippet({ src, alt, title, view })}
+		<figure>
+			<img {src} {alt} onload={() => view.requestMeasure()} />
+			<figcaption>{title ?? alt}</figcaption>
+		</figure>
+	{/snippet}
+</MarkdownEditor>
+```
+
+<SnippetDemo client:visible kind="image" />
+
+| Prop | Type | |
+|---|---|---|
+| `src` | `string` | Image URL, decoded (`<…>` and escapes removed) |
+| `alt` | `string` | Alt text |
+| `title` | `string \| undefined` | Title, without quotes |
+| `view` | `EditorView` | The editor |
+
+## Code block header
+
+Replaces the header above a rendered code block (language and Copy). The scrolling code area below stays the built-in one.
+
+```svelte
+<script lang="ts">
+	const titleOf = (info: string) => /title="([^"]*)"/.exec(info)?.[1];
+</script>
+
+<MarkdownEditor bind:value>
+	{#snippet codeHeaderSnippet({ language, info, code })}
+		<strong>{titleOf(info) ?? language}</strong>
+		<button onclick={() => navigator.clipboard.writeText(code)}>Copy</button>
+	{/snippet}
+</MarkdownEditor>
+```
+
+<SnippetDemo client:visible kind="code" />
+
+| Prop | Type | |
+|---|---|---|
+| `language` | `string` | First word of the info string (`ts`) |
+| `info` | `string` | The whole info string (`ts title="greet.ts"`) |
+| `code` | `string` | The code, without fences or container markup |
+| `view` | `EditorView` | The editor |
+
+## Tables
+
+Replaces the rendered table.
+
+```svelte
+<MarkdownEditor bind:value>
+	{#snippet tableSnippet({ table })}
+		{#each table.rows as row}
+			<div class="card">
+				{#each row as cell, i}
+					<p><small>{table.header[i].text}</small> {cell.text}</p>
+				{/each}
+			</div>
+		{/each}
+	{/snippet}
+</MarkdownEditor>
+```
+
+<SnippetDemo client:visible kind="table" />
+
+`table` has this shape:
+
+```ts
+interface TableData {
+	align: ('left' | 'center' | 'right' | null)[];
+	header: TableCellData[];
+	rows: TableCellData[][]; // padded or cut to the header's column count
+}
+
+interface TableCellData {
+	text: string; // the cell as plain text
+	segments: TableSegment[]; // the same text, split into formatted runs
+	from: number; // source offsets, relative to the table start
+	to: number;
+}
+
+interface TableSegment {
+	text: string;
+	strong?: boolean;
+	em?: boolean;
+	strike?: boolean;
+	code?: boolean;
+	href?: string;
+	from: number;
+}
+```
+
+Use `segments` to render formatting (bold, code, links) the way the built-in table does.
