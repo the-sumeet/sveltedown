@@ -3,6 +3,7 @@
 	import type { EditorView } from '@codemirror/view';
 	import type { CodeHeaderSnippetProps } from '../../types.js';
 	import { codeOffsetToPos } from '../../cm/utils/code-blocks.js';
+	import { caretAt, onScrollbar, textOffset } from '../../cm/utils/dom.js';
 	import CodeBlockHeader from './CodeBlockHeader.svelte';
 
 	let {
@@ -22,39 +23,18 @@
 	let pre: HTMLPreElement;
 	let codeEl: HTMLElement;
 
-	function onScrollbar(event: MouseEvent): boolean {
-		const rect = pre.getBoundingClientRect();
-		return (
-			event.clientY >= rect.top + pre.clientTop + pre.clientHeight ||
-			event.clientX >= rect.left + pre.clientLeft + pre.clientWidth
-		);
-	}
-
 	/** Offset into `code` under the pointer, or `null` if it is not over the code. */
 	function offsetAt(event: MouseEvent): number | null {
-		let node: Node | undefined;
-		let offset = 0;
-		if (document.caretPositionFromPoint) {
-			const pos = document.caretPositionFromPoint(event.clientX, event.clientY);
-			node = pos?.offsetNode;
-			offset = pos?.offset ?? 0;
-		} else if (document.caretRangeFromPoint) {
-			const range = document.caretRangeFromPoint(event.clientX, event.clientY);
-			node = range?.startContainer;
-			offset = range?.startOffset ?? 0;
-		}
-		if (!node || !codeEl.contains(node)) return null;
-		const range = document.createRange();
-		range.setStart(codeEl, 0);
-		range.setEnd(node, offset);
-		return range.toString().length;
+		const caret = caretAt(event);
+		if (!caret || !codeEl.contains(caret.node)) return null;
+		return textOffset(codeEl, caret.node, caret.offset);
 	}
 
 	// The editor ignores events on the <pre> (see `data-widget-interactive`), so its
 	// scrollbar and text selection work natively. A plain click opens the block for
 	// editing, with the cursor where the user clicked.
 	function onclick(event: MouseEvent) {
-		if (!window.getSelection()?.isCollapsed || onScrollbar(event)) return;
+		if (!window.getSelection()?.isCollapsed || onScrollbar(pre, event)) return;
 		const widgetPos = view.posAtDOM(pre);
 		const offset = offsetAt(event);
 		const pos =

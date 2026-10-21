@@ -17,6 +17,17 @@ Select a word and press \`Mod-b\` for **bold**, \`Mod-i\` for *italic* or \`Mod-
 
 Press Enter at the end of a task to start the next one.
 
+## Table
+
+| Feature | Status | Shortcut |
+|:--|:-:|--:|
+| **Bold** | done | \`Mod-b\` |
+| *Italic* | done | \`Mod-i\` |
+| [Links](https://svelte.dev) | done | \`Mod-k\` |
+| Format this table | try it | \`Mod-Shift-f\` |
+
+Click a cell to edit the table, then press \`Mod-Shift-f\` to line up the pipes.
+
 ---
 
 ## Image

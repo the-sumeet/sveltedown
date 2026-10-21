@@ -12,10 +12,15 @@
 		onchange,
 		imageSnippet,
 		codeHeaderSnippet,
+		tableSnippet,
 		extensions = []
 	}: MarkdownEditorProps = $props();
 
-	const snippets = $derived({ image: imageSnippet, codeHeader: codeHeaderSnippet });
+	const snippets = $derived({
+		image: imageSnippet,
+		codeHeader: codeHeaderSnippet,
+		table: tableSnippet
+	});
 
 	let container: HTMLDivElement;
 	let editor: EditorController | undefined = $state();

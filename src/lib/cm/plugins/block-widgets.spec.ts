@@ -11,6 +11,7 @@ import {
 	type WidgetSnippets
 } from './block-widgets.js';
 import { focusTracking, setEditorFocused } from '../utils/cursor.js';
+import type { TableData } from '../utils/tables.js';
 import { SvelteWidget } from '../utils/svelte-widget.svelte.js';
 import ImageWidget from '../../components/widgets/ImageWidget.svelte';
 import CheckboxWidget from '../../components/widgets/CheckboxWidget.svelte';
@@ -240,5 +241,38 @@ describe('selection-only updates', () => {
 		};
 		expect(ranges(intoImage.field(blockWidgetsField))).toEqual(ranges(expected));
 		expect(widgetsOf(intoImage)).toHaveLength(1);
+	});
+});
+
+describe('tables', () => {
+	const doc = 'intro\n\n| a | b |\n|---|--:|\n| 1 | 2 |\n\nend';
+
+	it('renders the table as one widget away from the cursor', () => {
+		const { widgets, lines } = build(doc, 0);
+		expect(widgets).toHaveLength(1);
+		expect(widgets[0]).toMatchObject({ from: 7, to: doc.indexOf('\n\nend') });
+		const table = (widgets[0].widget as SvelteWidget).props.table as TableData;
+		expect(table.align).toEqual([null, 'right']);
+		expect(table.rows[0].map((c) => c.text)).toEqual(['1', '2']);
+		expect(lines).toEqual([]);
+	});
+
+	it('shows raw, monospace rows when the cursor is in the table', () => {
+		const { widgets, lines } = build(doc, doc.indexOf('| 1'));
+		expect(widgets).toEqual([]);
+		expect(lines).toEqual(['cm-md-table-line', 'cm-md-table-line', 'cm-md-table-line']);
+	});
+
+	it('keeps a quote marker before the table visible', () => {
+		const quoted = 'x\n\n> | q |\n> |---|\n> | 1 |';
+		const [block] = build(quoted, 0).widgets;
+		expect(quoted.slice(block.from, block.from + 3)).toBe('| q');
+	});
+
+	it('uses the table snippet when one is configured', () => {
+		const table = createRawSnippet(() => ({ render: () => '<b></b>' }));
+		const widget = build(doc, 0, { table }).widgets[0].widget as SvelteWidget;
+		expect(widget.component).toBe(SnippetHost);
+		expect(widget.props.snippet).toBe(table);
 	});
 });

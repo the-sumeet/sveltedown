@@ -4,7 +4,7 @@ import { render } from 'vitest-browser-svelte';
 import { createRawSnippet } from 'svelte';
 import MarkdownEditor from '../MarkdownEditor.svelte';
 import { SvelteWidget } from '../../cm/utils/svelte-widget.svelte.js';
-import type { ImageSnippetProps } from '../../types.js';
+import type { ImageSnippetProps, TableSnippetProps } from '../../types.js';
 
 // 1x1 transparent PNG, so no network is involved.
 const PIXEL =
@@ -134,6 +134,57 @@ describe('code blocks', () => {
 		};
 		await expect.poll(cursorVisible).toBe(true);
 		expect(scroller().scrollLeft).toBeLessThan(100);
+	});
+});
+
+describe('tables', () => {
+	const doc =
+		'intro\n\n| Name | **Qty** |\n|:-----|----:|\n| apple | 3 |\n| [pear](https://x.dev) | `12` |';
+
+	it('renders an HTML table with alignment and formatted cells', async () => {
+		await render(MarkdownEditor, { value: doc });
+		const table = page.getByRole('table');
+		await expect.element(table).toBeInTheDocument();
+		const [, qty] = document.querySelectorAll('th');
+		expect(qty.style.textAlign).toBe('right');
+		expect(document.querySelector('th .cm-md-strong')?.textContent).toBe('Qty');
+		expect(document.querySelector('td .cm-md-code')?.textContent).toBe('12');
+		expect(document.querySelector('td .cm-md-link')?.getAttribute('data-url')).toBe(
+			'https://x.dev'
+		);
+		expect(document.querySelector('.cm-content')!.textContent).not.toContain('|');
+	});
+
+	it('opens the source with the cursor at the clicked character', async () => {
+		const onchange = vi.fn();
+		await render(MarkdownEditor, { value: doc, onchange });
+		const cell = [...document.querySelectorAll('td span')].find((s) => s.textContent === 'apple')!;
+		const range = document.createRange();
+		range.setStart(cell.firstChild!, 2);
+		range.setEnd(cell.firstChild!, 3);
+		const char = range.getBoundingClientRect();
+		const box = cell.getBoundingClientRect();
+		await page.elementLocator(cell).click({
+			position: { x: char.left - box.left + 1, y: char.height / 2 }
+		});
+		await userEvent.keyboard('Z');
+		expect(onchange.mock.lastCall![0]).toContain('| apZple | 3 |');
+	});
+
+	it('formats the table with Mod-Shift-f', async () => {
+		const onchange = vi.fn();
+		await render(MarkdownEditor, { value: '|a|bb|\n|-|-:|\n|ccc|d|', onchange });
+		await userEvent.click(page.getByRole('cell', { name: 'ccc' }));
+		await userEvent.keyboard('{ControlOrMeta>}{Shift>}f{/Shift}{/ControlOrMeta}');
+		expect(onchange).toHaveBeenLastCalledWith('| a   |  bb |\n| --- | --: |\n| ccc |   d |');
+	});
+
+	it('renders a custom table snippet', async () => {
+		const tableSnippet = createRawSnippet<[TableSnippetProps]>((props) => ({
+			render: () => `<p class="custom-table">${props().table.header.length} columns</p>`
+		}));
+		await render(MarkdownEditor, { value: doc, tableSnippet });
+		await expect.element(page.getByText('2 columns')).toBeInTheDocument();
 	});
 });
 

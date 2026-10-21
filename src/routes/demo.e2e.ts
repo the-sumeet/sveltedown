@@ -15,7 +15,7 @@ const source = (page: Page) => page.locator('textarea');
 
 test.beforeEach(async ({ page }) => {
 	await page.goto('/');
-	await expect(page.locator('.cm-md-image img')).toBeVisible();
+	await expect(page.locator('.cm-md-h1')).toBeVisible();
 });
 
 test('server-renders the page and editor container', async ({ request }) => {
@@ -53,7 +53,8 @@ test('reveals bold markers at the cursor and hides them away from it', async ({ 
 	await page.locator('.cm-md-strong', { hasText: 'live-preview' }).click();
 	await expect(line).toContainText('A **live-preview** Markdown');
 
-	await page.keyboard.press('ControlOrMeta+End');
+	// Move a few lines away (not to the end: CodeMirror unrenders lines far off-screen).
+	for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowDown');
 	await expect(line).toContainText('A live-preview Markdown');
 });
 
@@ -89,7 +90,20 @@ test('switches theme and read-only mode', async ({ page }) => {
 	await expect(source(page)).toHaveValue(before);
 });
 
+test('renders a table and formats its source', async ({ page }) => {
+	const table = page.locator('.cm-md-table table');
+	await expect(table.locator('th')).toHaveText(['Feature', 'Status', 'Shortcut']);
+
+	await table.locator('td', { hasText: 'try it' }).click();
+	await expect(page.locator('.cm-md-table-line').first()).toBeVisible();
+	await page.keyboard.press('ControlOrMeta+Shift+f');
+	await expect(source(page)).toHaveValue(/\| Feature +\| Status \| +Shortcut \|/);
+	await expect(source(page)).toHaveValue(/\| :-+ \| :-+: \| -+: \|/);
+});
+
 test('renders a custom image snippet', async ({ page }) => {
 	await page.getByLabel('Custom image snippet').check();
+	// CodeMirror only renders lines near the viewport; the image is further down.
+	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 	await expect(page.locator('figure figcaption')).toHaveText('Click the image to edit its source');
 });

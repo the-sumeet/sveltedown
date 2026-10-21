@@ -1,6 +1,7 @@
 import type { Snippet } from 'svelte';
 import type { Extension } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
+import type { TableData } from './cm/utils/tables.js';
 
 /** Props passed to a custom `imageSnippet`. */
 export interface ImageSnippetProps {
@@ -20,6 +21,12 @@ export interface CodeHeaderSnippetProps {
 	view: EditorView;
 }
 
+/** Props passed to a custom `tableSnippet`. Cell offsets are relative to the table start. */
+export interface TableSnippetProps {
+	table: TableData;
+	view: EditorView;
+}
+
 export interface MarkdownEditorProps {
 	/** Markdown source. Supports `bind:value`. */
 	value?: string;
@@ -32,6 +39,8 @@ export interface MarkdownEditorProps {
 	imageSnippet?: Snippet<[ImageSnippetProps]>;
 	/** Replaces the default fenced code block header widget. */
 	codeHeaderSnippet?: Snippet<[CodeHeaderSnippetProps]>;
+	/** Replaces the rendered table. */
+	tableSnippet?: Snippet<[TableSnippetProps]>;
 	/** Extra CodeMirror extensions appended after the built-in ones. */
 	extensions?: Extension[];
 }

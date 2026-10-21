@@ -3,6 +3,7 @@ import { keymap } from '@codemirror/view';
 import { defaultKeymap, historyKeymap } from '@codemirror/commands';
 import type { SyntaxNode } from '@lezer/common';
 import { findNodeAt } from './utils/syntax.js';
+import { formatTable } from './utils/tables.js';
 
 const WRAP_NODES: Record<string, { node: string; mark: string }> = {
 	'**': { node: 'StrongEmphasis', mark: 'EmphasisMark' },
@@ -97,7 +98,9 @@ export const formattingKeymap = [
 	{ key: 'Mod-b', run: toggleBold, preventDefault: true },
 	{ key: 'Mod-i', run: toggleItalic, preventDefault: true },
 	{ key: 'Mod-Shift-x', run: toggleStrikethrough, preventDefault: true },
-	{ key: 'Mod-k', run: insertLink, preventDefault: true }
+	{ key: 'Mod-k', run: insertLink, preventDefault: true },
+	// No preventDefault: outside a table the browser keeps the shortcut.
+	{ key: 'Mod-Shift-f', run: formatTable }
 ];
 
 /**

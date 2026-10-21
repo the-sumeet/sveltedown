@@ -95,15 +95,31 @@ export function codeLineStart(state: EditorState, pos: number): number | null {
 	return content ? content.start : block.lastChild!.from;
 }
 
+/** Where Home should go on a table row: its first character, after any container markup. */
+function tableLineStart(state: EditorState, pos: number): number | null {
+	const table = findNodeAt(state, pos, 'Table');
+	if (!table) return null;
+	const line = state.doc.lineAt(pos);
+	for (let row = table.firstChild; row; row = row.nextSibling) {
+		if (row.from >= line.from && row.from <= line.to && row.name !== 'QuoteMark') return row.from;
+	}
+	return line.from;
+}
+
+const inUnwrappedBlock = (state: EditorState, pos: number) =>
+	findNodeAt(state, pos, 'FencedCode') !== null || findNodeAt(state, pos, 'Table') !== null;
+
 // With line wrapping on, the default Home/End stop at the visible edge of a long,
-// unwrapped code line. Inside code blocks, go to the real line boundaries instead.
+// unwrapped line. Inside code blocks and raw tables, go to the real line boundaries.
 function lineBoundary(forward: boolean, extend: boolean): Command {
 	return (view: EditorView) => {
 		const { state } = view;
 		const targets = state.selection.ranges.map((range) =>
 			forward
-				? findNodeAt(state, range.head, 'FencedCode') && state.doc.lineAt(range.head).to
-				: codeLineStart(state, range.head)
+				? inUnwrappedBlock(state, range.head)
+					? state.doc.lineAt(range.head).to
+					: null
+				: (codeLineStart(state, range.head) ?? tableLineStart(state, range.head))
 		);
 		if (targets.some((target) => target === null)) return false;
 		const selection = EditorSelection.create(

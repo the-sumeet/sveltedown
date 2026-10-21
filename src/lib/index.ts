@@ -1,5 +1,18 @@
 export { default as MarkdownEditor } from './components/MarkdownEditor.svelte';
-export type { MarkdownEditorProps, ImageSnippetProps, CodeHeaderSnippetProps } from './types.js';
+export type {
+	MarkdownEditorProps,
+	ImageSnippetProps,
+	CodeHeaderSnippetProps,
+	TableSnippetProps
+} from './types.js';
+export {
+	formatTable,
+	tableData,
+	type TableAlign,
+	type TableCellData,
+	type TableData,
+	type TableSegment
+} from './cm/utils/tables.js';
 export {
 	createEditor,
 	coreExtensions,

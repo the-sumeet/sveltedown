@@ -142,7 +142,8 @@ export function createEditor(options: EditorOptions): EditorController {
 			view.dispatch({ effects: userConf.reconfigure(next) });
 		},
 		setSnippets(next) {
-			if (next.image === snippets.image && next.codeHeader === snippets.codeHeader) return;
+			const keys = ['image', 'codeHeader', 'table'] as const;
+			if (keys.every((key) => next[key] === snippets[key])) return;
 			snippets = next;
 			view.dispatch({ effects: snippetsConf.reconfigure(widgetSnippets.of(next)) });
 		},

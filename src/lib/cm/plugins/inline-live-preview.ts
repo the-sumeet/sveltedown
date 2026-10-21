@@ -10,6 +10,7 @@ import {
 import type { SyntaxNode } from '@lezer/common';
 import { isRevealed, revealInputsChanged } from '../utils/cursor.js';
 import { linkDestination } from '../utils/syntax.js';
+import { openLink } from '../utils/links.js';
 
 /** Replacement that hides a piece of Markdown syntax. */
 export const hiddenMarkup = Decoration.replace({});
@@ -82,8 +83,9 @@ export function buildInlineDecorations(
 			to,
 			enter: (ref) => {
 				const name = ref.name;
-				// Rendered as a widget by the block field; decorating inside it would collide.
-				if (name === 'Image') return false;
+				// Rendered as widgets by the block field; decorating inside them would collide.
+				// Tables also stay fully raw while revealed, so their pipes line up.
+				if (name === 'Image' || name === 'Table') return false;
 				const heading = /^ATXHeading([1-6])$/.exec(name);
 				if (heading) {
 					addHeading(state, ref.node, Number(heading[1]), out);
@@ -119,18 +121,6 @@ export function buildInlineDecorations(
 	}
 
 	return Decoration.set(out, true);
-}
-
-const SAFE_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
-
-function openLink(url: string) {
-	let parsed: URL;
-	try {
-		parsed = new URL(url, window.location.href);
-	} catch {
-		return;
-	}
-	if (SAFE_PROTOCOLS.has(parsed.protocol)) window.open(parsed.href, '_blank', 'noopener');
 }
 
 const inlinePlugin = ViewPlugin.fromClass(

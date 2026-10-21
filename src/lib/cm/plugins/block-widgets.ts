@@ -10,19 +10,22 @@ import {
 import { Decoration, EditorView, WidgetType, keymap, type DecorationSet } from '@codemirror/view';
 import type { SyntaxNode } from '@lezer/common';
 import type { Component, Snippet } from 'svelte';
-import type { CodeHeaderSnippetProps, ImageSnippetProps } from '../../types.js';
+import type { CodeHeaderSnippetProps, ImageSnippetProps, TableSnippetProps } from '../../types.js';
 import { isRevealed, revealInputsChanged } from '../utils/cursor.js';
 import { SvelteWidget } from '../utils/svelte-widget.svelte.js';
 import { codeBlockKeymap, fencedCodeParts } from '../utils/code-blocks.js';
 import { linkDestination, linkTitle } from '../utils/syntax.js';
+import { tableData } from '../utils/tables.js';
 import ImageWidget from '../../components/widgets/ImageWidget.svelte';
 import CheckboxWidget from '../../components/widgets/CheckboxWidget.svelte';
 import CodeBlockWidget from '../../components/widgets/CodeBlockWidget.svelte';
 import SnippetHost from '../../components/widgets/SnippetHost.svelte';
+import TableWidget from '../../components/widgets/TableWidget.svelte';
 
 export interface WidgetSnippets {
 	image?: Snippet<[ImageSnippetProps]>;
 	codeHeader?: Snippet<[CodeHeaderSnippetProps]>;
+	table?: Snippet<[TableSnippetProps]>;
 }
 
 /** User snippets that replace the default widgets. */
@@ -57,9 +60,10 @@ function snippetOr<P extends Record<string, unknown>>(
 	snippet: Snippet<[never]> | undefined,
 	component: Component<P & { view: EditorView }>,
 	props: P,
-	className: string
+	className: string,
+	block = false
 ): SvelteWidget {
-	const options = { class: className };
+	const options = { class: className, block };
 	if (snippet)
 		return new SvelteWidget<Record<string, unknown>>(snippetHost, { snippet, ...props }, options);
 	return new SvelteWidget<Record<string, unknown>>(
@@ -85,9 +89,9 @@ function addImage(state: EditorState, node: SyntaxNode, out: Range<Decoration>[]
 	out.push(Decoration.replace({ widget }).range(node.from, node.to));
 }
 
-/** The range a block node's decorations live in. Code blocks reveal per whole line. */
+/** The range a block node's decorations live in. Code blocks and tables reveal per whole line. */
 function extentOf(state: EditorState, node: SyntaxNode): { from: number; to: number } {
-	if (node.name !== 'FencedCode') return { from: node.from, to: node.to };
+	if (node.name !== 'FencedCode' && node.name !== 'Table') return { from: node.from, to: node.to };
 	return { from: state.doc.lineAt(node.from).from, to: state.doc.lineAt(node.to).to };
 }
 
@@ -125,7 +129,33 @@ function addFencedCode(state: EditorState, node: SyntaxNode, out: Range<Decorati
 	out.push(Decoration.replace({ widget, block: true }).range(node.from, to));
 }
 
-const BLOCK_NODES = new Set(['Image', 'TaskMarker', 'HorizontalRule', 'FencedCode']);
+const tableLine = Decoration.line({ class: 'cm-md-table-line' });
+
+/**
+ * Away from the cursor a table renders as an HTML table, starting at its first pipe so
+ * container markup stays visible. Near it, the raw rows show unwrapped in monospace,
+ * so the pipes line up (see `formatTable`).
+ */
+function addTable(state: EditorState, node: SyntaxNode, out: Range<Decoration>[]) {
+	const { from, to } = extentOf(state, node);
+	if (isRevealed(state, from, to)) {
+		for (let n = state.doc.lineAt(from).number; n <= state.doc.lineAt(to).number; n++) {
+			out.push(tableLine.range(state.doc.line(n).from));
+		}
+		return;
+	}
+	const snippet = state.facet(widgetSnippets).table;
+	const widget = snippetOr(
+		snippet,
+		TableWidget,
+		{ table: tableData(state, node) },
+		'cm-md-table',
+		true
+	);
+	out.push(Decoration.replace({ widget, block: true }).range(node.from, to));
+}
+
+const BLOCK_NODES = new Set(['Image', 'TaskMarker', 'HorizontalRule', 'FencedCode', 'Table']);
 
 /** Adds decorations for the block nodes overlapping `[from, to]`, reporting each node's extent. */
 function collect(
@@ -157,6 +187,9 @@ function collect(
 					break;
 				case 'FencedCode':
 					addFencedCode(state, ref.node, out);
+					break;
+				case 'Table':
+					addTable(state, ref.node, out);
 					break;
 			}
 			return false;
@@ -289,6 +322,27 @@ const blockTheme = EditorView.baseTheme({
 		outline: 'none',
 		cursor: 'text'
 	},
+	// Raw table rows while editing: monospace and unwrapped, like code lines.
+	'.cm-line.cm-md-table-line': {
+		fontFamily: 'var(--md-font-mono)',
+		fontSize: '0.9em',
+		boxSizing: 'border-box',
+		width: '0',
+		minWidth: '100%',
+		whiteSpace: 'pre',
+		wordBreak: 'normal',
+		overflowWrap: 'normal'
+	},
+	'.cm-md-table': { whiteSpace: 'normal', padding: '0.25em 0' },
+	'.cm-md-table-scroll': { width: '0', minWidth: '100%', overflowX: 'auto', outline: 'none' },
+	'.cm-md-table table': { borderCollapse: 'collapse' },
+	'.cm-md-table th, .cm-md-table td': {
+		border: '1px solid var(--md-border)',
+		padding: '0.3em 0.75em',
+		textAlign: 'left',
+		verticalAlign: 'top'
+	},
+	'.cm-md-table th': { fontWeight: '600', backgroundColor: 'var(--md-code-block-bg)' },
 	// The UA `code { font-family: monospace }` would shrink the font (monospace quirk).
 	'.cm-md-code-pre code': { font: 'inherit' },
 	'.cm-md-code-copy': {
@@ -302,7 +356,7 @@ const blockTheme = EditorView.baseTheme({
 	}
 });
 
-/** Images, task checkboxes, horizontal rules and fenced code blocks as widgets. */
+/** Images, task checkboxes, horizontal rules, fenced code blocks and tables as widgets. */
 export function blockWidgets(): Extension {
 	return [blockWidgetsField, blockTheme, Prec.high(keymap.of(codeBlockKeymap))];
 }

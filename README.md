@@ -8,9 +8,10 @@ The document stays plain Markdown text. Syntax such as `**`, `#` and `[text](url
 - Headings, bold, italic, strikethrough, inline code and links styled in place
 - Image previews, clickable task checkboxes, horizontal rules
 - Code blocks with a language label, a copy button, and lines that scroll sideways instead of wrapping
+- GFM tables rendered as HTML tables, with a command that lines up the source's pipes
 - Formatting shortcuts, plus list and task continuation on Enter
 - Themed with CSS variables, with light and dark modes
-- Custom Svelte snippets for images and code block headers
+- Custom Svelte snippets for images, code block headers and tables
 
 ## Install
 
@@ -45,6 +46,7 @@ The component imports its own stylesheet. If you use the CodeMirror extensions w
 | `onchange`          | `(value: string) => void`           |         | Called after each edit made in the editor.              |
 | `imageSnippet`      | `Snippet<[ImageSnippetProps]>`      |         | Replaces the image preview.                             |
 | `codeHeaderSnippet` | `Snippet<[CodeHeaderSnippetProps]>` |         | Replaces the code block header (language and copy).     |
+| `tableSnippet`      | `Snippet<[TableSnippetProps]>`      |         | Replaces the rendered table.                            |
 | `extensions`        | `Extension[]`                       | `[]`    | Extra CodeMirror extensions, added after the built-ins. |
 
 Changing `value` from outside updates the editor in place. Only the changed part of the document is replaced, so the cursor and undo history elsewhere are kept. `onchange` is not called for those updates.
@@ -64,6 +66,12 @@ Changing `value` from outside updates the editor in place. Only the changed part
 
 `codeHeaderSnippet` receives `language` (the first word of the fence's info string), `info` (the whole string, e.g. `ts title="a.ts"`) and `code`. Each snippet also receives `view`, the CodeMirror `EditorView`. If your content changes size after it renders, for example when an image loads, call `view.requestMeasure()` so cursor positions stay accurate.
 
+### Tables
+
+GFM tables render as HTML tables, keeping column alignment and the formatting inside cells. Clicking a cell shows the raw rows in monospace, with the cursor where you clicked. `Mod-Shift-f` then pads every cell so the pipes line up. Cells beyond the header's columns are kept, not dropped.
+
+A `tableSnippet` receives `table` (`{ align, header, rows }`) and `view`. Each cell has its plain `text` and formatted `segments` (`{ text, strong, em, strike, code, href }`).
+
 ## Keyboard shortcuts
 
 `Mod` is Cmd on macOS and Ctrl elsewhere.
@@ -74,6 +82,7 @@ Changing `value` from outside updates the editor in place. Only the changed part
 | `Mod-i`       | Toggle _italic_.                                            |
 | `Mod-Shift-x` | Toggle ~~strikethrough~~.                                   |
 | `Mod-k`       | Insert a link: `[selection](url)` with `url` selected.      |
+| `Mod-Shift-f` | In a table: pad the cells so the pipes line up.             |
 | `Enter`       | Continue the current list or task list.                     |
 | Mod-click     | Open a link (`http`, `https` and `mailto` only).            |
 
