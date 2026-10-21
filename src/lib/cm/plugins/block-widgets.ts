@@ -333,7 +333,14 @@ const blockTheme = EditorView.baseTheme({
 		wordBreak: 'normal',
 		overflowWrap: 'normal'
 	},
-	'.cm-md-table': { whiteSpace: 'normal', padding: '0.25em 0' },
+	// The editor content breaks words anywhere (`overflow-wrap: anywhere`); inherited,
+	// that would crush a wide table into one-letter columns instead of scrolling it.
+	'.cm-md-table': {
+		whiteSpace: 'normal',
+		overflowWrap: 'normal',
+		wordBreak: 'normal',
+		padding: '0.25em 0'
+	},
 	'.cm-md-table-scroll': { width: '0', minWidth: '100%', overflowX: 'auto', outline: 'none' },
 	'.cm-md-table table': { borderCollapse: 'collapse' },
 	'.cm-md-table th, .cm-md-table td': {
@@ -342,7 +349,13 @@ const blockTheme = EditorView.baseTheme({
 		textAlign: 'left',
 		verticalAlign: 'top'
 	},
-	'.cm-md-table th': { fontWeight: '600', backgroundColor: 'var(--md-code-block-bg)' },
+	// Headers stay on one line, so many columns overflow into the scroll box; body
+	// cells still wrap between words.
+	'.cm-md-table th': {
+		fontWeight: '600',
+		whiteSpace: 'nowrap',
+		backgroundColor: 'var(--md-code-block-bg)'
+	},
 	// The UA `code { font-family: monospace }` would shrink the font (monospace quirk).
 	'.cm-md-code-pre code': { font: 'inherit' },
 	'.cm-md-code-copy': {

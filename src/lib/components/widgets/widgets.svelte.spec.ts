@@ -179,6 +179,20 @@ describe('tables', () => {
 		expect(onchange).toHaveBeenLastCalledWith('| a   |  bb |\n| --- | --: |\n| ccc |   d |');
 	});
 
+	it('scrolls a wide table inside its own box instead of crushing its columns', async () => {
+		const cols = Array.from({ length: 12 }, (_, i) => `Column ${i + 1}`);
+		const value = `| ${cols.join(' | ')} |\n|${cols.map(() => '---').join('|')}|\n| ${cols.join(' | ')} |`;
+		await render(MarkdownEditor, { value: `intro\n\n${value}` });
+		await expect.element(page.getByRole('table')).toBeInTheDocument();
+		const box = document.querySelector<HTMLElement>('.cm-md-table-scroll')!;
+		const th = box.querySelector('th')!;
+		const lineHeight = parseFloat(getComputedStyle(th).lineHeight);
+		expect(box.scrollWidth).toBeGreaterThan(box.clientWidth);
+		expect(th.clientHeight).toBeLessThan(lineHeight * 2 + 20);
+		const scroller = document.querySelector<HTMLElement>('.cm-scroller')!;
+		expect(scroller.scrollWidth).toBeLessThanOrEqual(scroller.clientWidth);
+	});
+
 	it('renders a custom table snippet', async () => {
 		const tableSnippet = createRawSnippet<[TableSnippetProps]>((props) => ({
 			render: () => `<p class="custom-table">${props().table.header.length} columns</p>`
