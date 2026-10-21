@@ -25,7 +25,8 @@ export default defineConfig({
 			'@codemirror/view',
 			'@codemirror/language',
 			'@codemirror/commands',
-			'@codemirror/lang-markdown'
+			'@codemirror/lang-markdown',
+			'@lezer/highlight'
 		]
 	},
 	test: {

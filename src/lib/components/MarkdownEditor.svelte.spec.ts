@@ -43,6 +43,54 @@ describe('MarkdownEditor', () => {
 		await expect.element(content()).toHaveTextContent('x bold y');
 	});
 
+	it('formats with keyboard shortcuts', async () => {
+		const onchange = vi.fn();
+		await render(MarkdownEditor, { value: 'hello world', onchange });
+		await userEvent.click(content());
+		await userEvent.keyboard('{End}{ArrowLeft}');
+		await userEvent.keyboard('{ControlOrMeta>}b{/ControlOrMeta}');
+		expect(onchange).toHaveBeenLastCalledWith('hello **world**');
+		await userEvent.keyboard('{ControlOrMeta>}i{/ControlOrMeta}');
+		expect(onchange).toHaveBeenLastCalledWith('hello ***world***');
+		await userEvent.keyboard('{ControlOrMeta>}b{/ControlOrMeta}');
+		expect(onchange).toHaveBeenLastCalledWith('hello *world*');
+		await userEvent.keyboard('{ControlOrMeta>}k{/ControlOrMeta}https://x.dev');
+		expect(onchange).toHaveBeenLastCalledWith('hello *[world](https://x.dev)*');
+	});
+
+	it('continues task lists on Enter', async () => {
+		const onchange = vi.fn();
+		await render(MarkdownEditor, { value: '- [ ] one', onchange });
+		await userEvent.click(content());
+		await userEvent.keyboard('{ControlOrMeta>}{End}{/ControlOrMeta}{Enter}two');
+		expect(onchange).toHaveBeenLastCalledWith('- [ ] one\n- [ ] two');
+	});
+
+	describe('theme', () => {
+		const color = (selector: string) => getComputedStyle(document.querySelector(selector)!).color;
+
+		it('reads colours from CSS variables', async () => {
+			await render(MarkdownEditor, { value: 'see [docs](https://x.dev)', class: 'custom' });
+			const style = document.createElement('style');
+			style.textContent = '.custom { --md-link-color: rgb(255, 0, 0); }';
+			document.head.append(style);
+			expect(color('.cm-md-link')).toBe('rgb(255, 0, 0)');
+			style.remove();
+		});
+
+		it('switches to dark colours with data-theme', async () => {
+			await render(MarkdownEditor, { value: 'text' });
+			const light = color('.cm-editor');
+			document.documentElement.dataset.theme = 'dark';
+			const dark = color('.cm-editor');
+			document.documentElement.dataset.theme = 'light';
+			expect(color('.cm-editor')).toBe(light);
+			delete document.documentElement.dataset.theme;
+			expect(dark).not.toBe(light);
+			expect(dark).toBe('rgb(230, 237, 243)');
+		});
+	});
+
 	it('honours readonly', async () => {
 		await render(MarkdownEditor, { value: 'x', readonly: true });
 		await expect.element(content()).toHaveAttribute('contenteditable', 'false');

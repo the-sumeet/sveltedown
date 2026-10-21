@@ -5,11 +5,13 @@ import {
 	Transaction,
 	type Extension
 } from '@codemirror/state';
-import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { EditorView, placeholder as placeholderExtension } from '@codemirror/view';
+import { history } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { inlineLivePreview } from './plugins/inline-live-preview.js';
 import { blockWidgets, widgetSnippets, type WidgetSnippets } from './plugins/block-widgets.js';
+import { editorKeymaps } from './keymaps.js';
+import { markdownTheme } from './theme.js';
 
 /** Marks transactions that sync the document from the `value` prop, so they are not echoed back. */
 export const externalSync = Annotation.define<boolean>();
@@ -51,7 +53,8 @@ export function coreExtensions(): Extension[] {
 		EditorView.lineWrapping,
 		inlineLivePreview(),
 		blockWidgets(),
-		keymap.of([...defaultKeymap, ...historyKeymap])
+		markdownTheme(),
+		editorKeymaps()
 	];
 }
 

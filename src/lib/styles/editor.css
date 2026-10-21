@@ -1,0 +1,41 @@
+/*
+ * Default sveltedown theme. Everything the editor draws reads these variables.
+ *
+ * The defaults use :where(), so they have zero specificity: any rule that sets a
+ * variable on the editor element wins, e.g. `.sveltedown { --md-accent: tomato; }` or a
+ * class passed through the `class` prop.
+ *
+ * Colours follow the system light/dark preference. Force one with `data-theme="light"`
+ * or `data-theme="dark"` on the editor or any ancestor (e.g. <html>).
+ */
+:where(.sveltedown) {
+	color-scheme: light dark;
+
+	--md-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+	--md-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+	--md-font-size: 16px;
+	--md-line-height: 1.6;
+	--md-padding: 0.75rem 1rem;
+
+	--md-text: light-dark(#1f2328, #e6edf3);
+	--md-bg: light-dark(#ffffff, #0d1117);
+	--md-muted: light-dark(#6e7781, #8b949e);
+	--md-heading-color: light-dark(#0f1419, #f0f6fc);
+	--md-link-color: light-dark(#0969da, #4493f8);
+	--md-accent: light-dark(#0969da, #4493f8);
+	--md-code-bg: light-dark(rgba(175, 184, 193, 0.25), rgba(110, 118, 129, 0.4));
+	--md-code-block-bg: light-dark(#f6f8fa, #161b22);
+	--md-border: light-dark(#d0d7de, #30363d);
+	--md-selection: light-dark(rgba(9, 105, 218, 0.2), rgba(56, 139, 253, 0.35));
+	--md-caret: var(--md-text);
+}
+
+:where([data-theme='light']) :where(.sveltedown),
+:where(.sveltedown[data-theme='light']) {
+	color-scheme: light;
+}
+
+:where([data-theme='dark']) :where(.sveltedown),
+:where(.sveltedown[data-theme='dark']) {
+	color-scheme: dark;
+}

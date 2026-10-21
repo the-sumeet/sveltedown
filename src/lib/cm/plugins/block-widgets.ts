@@ -193,24 +193,31 @@ const blockTheme = EditorView.baseTheme({
 	'.cm-md-image-error': {
 		display: 'inline-block',
 		padding: '0.2em 0.5em',
-		border: '1px dashed currentColor',
+		border: '1px dashed var(--md-border)',
 		borderRadius: '4px',
-		opacity: '0.7'
+		color: 'var(--md-muted)'
 	},
 	'.cm-md-task': { display: 'inline-block', verticalAlign: 'middle' },
-	'.cm-md-checkbox': { margin: '0 0.25em 0 0', cursor: 'pointer' },
+	'.cm-md-checkbox': {
+		margin: '0 0.25em 0 0',
+		cursor: 'pointer',
+		accentColor: 'var(--md-accent)'
+	},
 	'.cm-md-hr': {
 		display: 'inline-block',
 		width: '100%',
 		verticalAlign: 'middle',
-		borderTop: '1px solid rgba(127, 127, 127, 0.4)'
+		borderTop: '1px solid var(--md-border)'
 	},
 	// Raw lines while editing: no wrapping; the editor scrolls sideways to the cursor.
 	// `width: 0; min-width: 100%` keeps a long line from widening the content (which
 	// would stop every paragraph from wrapping); the text overflows into the scroller.
+	// Same font size and line height as the rendered <pre>, so the block keeps its height.
 	'.cm-line.cm-md-codeblock': {
-		fontFamily: 'ui-monospace, monospace',
-		backgroundColor: 'rgba(127, 127, 127, 0.1)',
+		fontFamily: 'var(--md-font-mono)',
+		fontSize: '0.9em',
+		lineHeight: '1.5',
+		backgroundColor: 'var(--md-code-block-bg)',
 		padding: '0 0.75em',
 		boxSizing: 'border-box',
 		width: '0',
@@ -225,8 +232,9 @@ const blockTheme = EditorView.baseTheme({
 	'.cm-md-codeblock-widget': {
 		// The editor content preserves whitespace; template whitespace here must not render.
 		whiteSpace: 'normal',
-		fontFamily: 'ui-monospace, monospace',
-		backgroundColor: 'rgba(127, 127, 127, 0.1)',
+		fontFamily: 'var(--md-font-mono)',
+		fontSize: '0.9em',
+		backgroundColor: 'var(--md-code-block-bg)',
 		borderRadius: '6px',
 		padding: '0.2em 0.75em'
 	},
@@ -234,8 +242,8 @@ const blockTheme = EditorView.baseTheme({
 		display: 'flex',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		fontSize: '0.8em',
-		opacity: '0.8'
+		fontSize: '0.85em',
+		color: 'var(--md-muted)'
 	},
 	'.cm-md-code-pre': {
 		margin: '0',
@@ -245,7 +253,7 @@ const blockTheme = EditorView.baseTheme({
 		overflowX: 'auto',
 		whiteSpace: 'pre',
 		font: 'inherit',
-		lineHeight: '1.4',
+		lineHeight: '1.5',
 		outline: 'none',
 		cursor: 'text'
 	},
@@ -253,9 +261,10 @@ const blockTheme = EditorView.baseTheme({
 	'.cm-md-code-pre code': { font: 'inherit' },
 	'.cm-md-code-copy': {
 		font: 'inherit',
+		color: 'inherit',
 		cursor: 'pointer',
 		background: 'transparent',
-		border: '1px solid rgba(127, 127, 127, 0.4)',
+		border: '1px solid var(--md-border)',
 		borderRadius: '4px',
 		padding: '0 0.5em'
 	}

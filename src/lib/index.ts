@@ -17,3 +17,13 @@ export {
 export { isCursorInRange } from './cm/utils/cursor.js';
 export { toggleTask } from './cm/utils/tasks.js';
 export { SvelteWidget, type SvelteWidgetOptions } from './cm/utils/svelte-widget.svelte.js';
+export {
+	editorKeymaps,
+	formattingKeymap,
+	insertLink,
+	toggleBold,
+	toggleItalic,
+	toggleStrikethrough,
+	toggleWrap
+} from './cm/keymaps.js';
+export { editorTheme, markdownHighlightStyle, markdownTheme } from './cm/theme.js';

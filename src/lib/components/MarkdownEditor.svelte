@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import type { MarkdownEditorProps } from '../types.js';
 	import { createEditor, type EditorController } from '../cm/setup.js';
+	import '../styles/editor.css';
 
 	let {
 		value = $bindable(''),

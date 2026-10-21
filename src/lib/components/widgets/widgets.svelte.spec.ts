@@ -126,7 +126,14 @@ describe('code blocks', () => {
 		expect(onchange.mock.lastCall![0]).toContain(`${longLine}!`);
 
 		await userEvent.keyboard('{Home}');
-		await expect.poll(() => scroller().scrollLeft).toBeLessThan(20);
+		// Scrolled back far enough that the cursor at the line start is visible.
+		const cursorVisible = () => {
+			const range = window.getSelection()!.getRangeAt(0).getBoundingClientRect();
+			const box = scroller().getBoundingClientRect();
+			return range.left >= box.left && range.left <= box.right;
+		};
+		await expect.poll(cursorVisible).toBe(true);
+		expect(scroller().scrollLeft).toBeLessThan(100);
 	});
 });
 

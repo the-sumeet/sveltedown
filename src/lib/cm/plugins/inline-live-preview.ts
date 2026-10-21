@@ -168,24 +168,31 @@ const linkClickHandler = EditorView.domEventHandlers({
 	}
 });
 
+// Colours and fonts come from the `--md-*` variables in `styles/editor.css`.
 const inlineTheme = EditorView.baseTheme({
-	'.cm-md-heading': { fontWeight: '700' },
-	'.cm-md-h1': { fontSize: '2em' },
-	'.cm-md-h2': { fontSize: '1.6em' },
-	'.cm-md-h3': { fontSize: '1.35em' },
-	'.cm-md-h4': { fontSize: '1.15em' },
-	'.cm-md-h5': { fontSize: '1em' },
-	'.cm-md-h6': { fontSize: '0.9em' },
+	'.cm-md-heading': { fontWeight: '700', lineHeight: '1.3', color: 'var(--md-heading-color)' },
+	'.cm-md-h1': { fontSize: '2em', paddingTop: '0.4em' },
+	'.cm-md-h2': { fontSize: '1.6em', paddingTop: '0.35em' },
+	'.cm-md-h3': { fontSize: '1.35em', paddingTop: '0.3em' },
+	'.cm-md-h4': { fontSize: '1.15em', paddingTop: '0.25em' },
+	'.cm-md-h5': { fontSize: '1em', paddingTop: '0.2em' },
+	'.cm-md-h6': { fontSize: '0.9em', paddingTop: '0.2em', color: 'var(--md-muted)' },
 	'.cm-md-strong': { fontWeight: '700' },
 	'.cm-md-em': { fontStyle: 'italic' },
 	'.cm-md-strikethrough': { textDecoration: 'line-through' },
 	'.cm-md-code': {
-		fontFamily: 'ui-monospace, monospace',
-		backgroundColor: 'rgba(127, 127, 127, 0.15)',
+		fontFamily: 'var(--md-font-mono)',
+		fontSize: '0.9em',
+		backgroundColor: 'var(--md-code-bg)',
 		borderRadius: '4px',
 		padding: '0.1em 0.3em'
 	},
-	'.cm-md-link': { color: '#2563eb', textDecoration: 'underline', cursor: 'pointer' }
+	'.cm-md-link': {
+		color: 'var(--md-link-color)',
+		textDecoration: 'underline',
+		textUnderlineOffset: '0.15em',
+		cursor: 'pointer'
+	}
 });
 
 /** Hides inline Markdown syntax (headings, emphasis, code, links) away from the cursor. */
