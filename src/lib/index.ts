@@ -7,3 +7,5 @@ export {
 	type EditorController,
 	type EditorOptions
 } from './cm/setup.js';
+export { inlineLivePreview, buildInlineDecorations } from './cm/plugins/inline-live-preview.js';
+export { isCursorInRange } from './cm/utils/cursor.js';

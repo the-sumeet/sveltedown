@@ -18,6 +18,16 @@ export default defineConfig({
 			adapter: adapter()
 		})
 	],
+	// Pre-bundle up front so browser tests are not reloaded mid-run when Vite discovers them.
+	optimizeDeps: {
+		include: [
+			'@codemirror/state',
+			'@codemirror/view',
+			'@codemirror/language',
+			'@codemirror/commands',
+			'@codemirror/lang-markdown'
+		]
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [

@@ -8,6 +8,7 @@ import {
 import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
+import { inlineLivePreview } from './plugins/inline-live-preview.js';
 
 /** Marks transactions that sync the document from the `value` prop, so they are not echoed back. */
 export const externalSync = Annotation.define<boolean>();
@@ -45,6 +46,7 @@ export function coreExtensions(): Extension[] {
 		history(),
 		markdown({ base: markdownLanguage }),
 		EditorView.lineWrapping,
+		inlineLivePreview(),
 		keymap.of([...defaultKeymap, ...historyKeymap])
 	];
 }

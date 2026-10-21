@@ -29,6 +29,20 @@ describe('MarkdownEditor', () => {
 		expect(onchange).not.toHaveBeenCalled();
 	});
 
+	it('hides bold markers away from the cursor and reveals them inside', async () => {
+		await render(MarkdownEditor, { value: 'x **bold** y' });
+		const el = document.querySelector('.cm-content')!;
+		await expect.element(content()).toHaveTextContent('x bold y');
+		expect(el.querySelector('.cm-md-strong')?.textContent).toBe('bold');
+
+		await userEvent.click(content());
+		await userEvent.keyboard('{Home}{ArrowRight}{ArrowRight}{ArrowRight}');
+		await expect.element(content()).toHaveTextContent('x **bold** y');
+
+		await userEvent.keyboard('{End}');
+		await expect.element(content()).toHaveTextContent('x bold y');
+	});
+
 	it('honours readonly', async () => {
 		await render(MarkdownEditor, { value: 'x', readonly: true });
 		await expect.element(content()).toHaveAttribute('contenteditable', 'false');

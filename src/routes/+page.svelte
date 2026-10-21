@@ -1,7 +1,20 @@
 <script lang="ts">
 	import { MarkdownEditor } from '#lib';
 
-	let value = $state('# Hello sveltedown\n\nSome **bold** and *italic* text.\n');
+	let value = $state(
+		[
+			'# Hello sveltedown',
+			'',
+			'Some **bold**, *italic* and ~~struck~~ text with `inline code`.',
+			'',
+			'## Links',
+			'',
+			'Read the [Svelte docs](https://svelte.dev "Svelte"). Mod-click opens it.',
+			'',
+			'### Nested **bold *and italic*** heading',
+			''
+		].join('\n')
+	);
 </script>
 
 <main>
