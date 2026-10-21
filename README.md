@@ -1,79 +1,122 @@
-# Svelte library
+# sveltedown
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+A live-preview Markdown editor for **Svelte 5**, built on **CodeMirror 6**, in the style of Typora and Obsidian.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+The document stays plain Markdown text. Syntax such as `**`, `#` and `[text](url)` is hidden while the cursor is elsewhere and shows again when the cursor moves into it. Images, task checkboxes, horizontal rules and code blocks render as interactive Svelte components.
 
-## Creating a project
+- Two-way `bind:value`, safe to render with SSR in SvelteKit
+- Headings, bold, italic, strikethrough, inline code and links styled in place
+- Image previews, clickable task checkboxes, horizontal rules
+- Code blocks with a language label, a copy button, and lines that scroll sideways instead of wrapping
+- Formatting shortcuts, plus list and task continuation on Enter
+- Themed with CSS variables, with light and dark modes
+- Custom Svelte snippets for images and code block headers
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Install
 
 ```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+npm install sveltedown
 ```
 
-To recreate this project with the same configuration:
+`svelte@^5` is a peer dependency.
 
-```sh
-# recreate this project
-npx sv@1.1.1 create --template library --types ts --add prettier eslint vitest="usages:unit,component" playwright="demo:no" --install npm sveltedown
+## Usage
+
+```svelte
+<script lang="ts">
+	import { MarkdownEditor } from 'sveltedown';
+
+	let value = $state('# Hello\n\nStart **writing**…');
+</script>
+
+<MarkdownEditor bind:value placeholder="Start writing…" />
 ```
 
-## Adding features
+The component imports its own stylesheet. If you use the CodeMirror extensions without the component, import `sveltedown/editor.css` yourself.
 
-Add features to your project with `sv add`:
+### Props
 
-```sh
-npx sv add
+| Prop                | Type                                | Default | Description                                             |
+| ------------------- | ----------------------------------- | ------- | ------------------------------------------------------- |
+| `value`             | `string`                            | `''`    | Markdown source. Supports `bind:value`.                 |
+| `placeholder`       | `string`                            | `''`    | Shown when the document is empty.                       |
+| `readonly`          | `boolean`                           | `false` | Disables editing. Links open with a plain click.        |
+| `class`             | `string`                            | `''`    | Extra class for the editor element.                     |
+| `onchange`          | `(value: string) => void`           |         | Called after each edit made in the editor.              |
+| `imageSnippet`      | `Snippet<[ImageSnippetProps]>`      |         | Replaces the image preview.                             |
+| `codeHeaderSnippet` | `Snippet<[CodeHeaderSnippetProps]>` |         | Replaces the code block header (language and copy).     |
+| `extensions`        | `Extension[]`                       | `[]`    | Extra CodeMirror extensions, added after the built-ins. |
+
+Changing `value` from outside updates the editor in place. Only the changed part of the document is replaced, so the cursor and undo history elsewhere are kept. `onchange` is not called for those updates.
+
+### Custom snippets
+
+```svelte
+<MarkdownEditor bind:value>
+	{#snippet imageSnippet({ src, alt, title, view })}
+		<figure>
+			<img {src} {alt} onload={() => view.requestMeasure()} />
+			<figcaption>{title ?? alt}</figcaption>
+		</figure>
+	{/snippet}
+</MarkdownEditor>
 ```
 
-For example, to add Tailwind CSS:
+Each snippet also receives `view`, the CodeMirror `EditorView`. If your content changes size after it renders, for example when an image loads, call `view.requestMeasure()` so cursor positions stay accurate.
 
-```sh
-npx sv add tailwindcss
+## Keyboard shortcuts
+
+`Mod` is Cmd on macOS and Ctrl elsewhere.
+
+| Keys          | Action                                                      |
+| ------------- | ----------------------------------------------------------- |
+| `Mod-b`       | Toggle **bold** on the selection or the word at the cursor. |
+| `Mod-i`       | Toggle _italic_.                                            |
+| `Mod-Shift-x` | Toggle ~~strikethrough~~.                                   |
+| `Mod-k`       | Insert a link: `[selection](url)` with `url` selected.      |
+| `Enter`       | Continue the current list or task list.                     |
+| Mod-click     | Open a link (`http`, `https` and `mailto` only).            |
+
+## Theming
+
+Everything the editor draws reads `--md-*` CSS variables. The defaults have zero specificity, so any rule that targets the editor overrides them:
+
+```css
+.sveltedown {
+	--md-font-family: 'Inter', sans-serif;
+	--md-link-color: #d6336c;
+	--md-padding: 2rem;
+}
 ```
 
-## Developing
+| Variable                                                   | Controls                    |
+| ---------------------------------------------------------- | --------------------------- |
+| `--md-font-family`, `--md-font-mono`                       | Prose and code fonts        |
+| `--md-font-size`, `--md-line-height`, `--md-padding`       | Size and spacing            |
+| `--md-text`, `--md-bg`, `--md-muted`, `--md-heading-color` | Text and background colours |
+| `--md-link-color`, `--md-accent`                           | Links, checkboxes           |
+| `--md-code-bg`, `--md-code-block-bg`                       | Inline code and code blocks |
+| `--md-border`, `--md-selection`, `--md-caret`              | Rules, selection and caret  |
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+The colours follow the system light/dark setting. To force one, set `data-theme="light"` or `data-theme="dark"` on the editor or any ancestor, such as `<html>`. The defaults use `light-dark()`, which needs Chrome 123+, Firefox 120+ or Safari 17.5+.
 
-```sh
-npm run dev
+## CodeMirror building blocks
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+The extensions behind the component are exported too, for use in your own CodeMirror setup or alongside the `extensions` prop:
 
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
+- `inlineLivePreview()`, `blockWidgets()`, `markdownTheme()`, `editorKeymaps()` and `coreExtensions()` (all of them together)
+- the commands `toggleBold`, `toggleItalic`, `toggleStrikethrough`, `toggleWrap(marker)`, `insertLink` and `toggleTask`
+- `SvelteWidget`, a CodeMirror `WidgetType` that mounts any Svelte 5 component and updates its props in place
+- `createEditor()`, the framework-agnostic setup the component uses
 
-## Building
-
-To build your library:
-
-```sh
-npm pack
-```
-
-To create a production version of your showcase app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
+## Development
 
 ```sh
-npm publish
+npm install
+npm run dev        # playground at src/routes
+npm run check      # svelte-check
+npm run lint
+npm run test:unit  # Vitest: node and browser (Chromium) projects
+npm run test:e2e   # Playwright against the production build
+npm run package    # svelte-package + publint
 ```
