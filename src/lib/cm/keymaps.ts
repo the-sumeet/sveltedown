@@ -19,14 +19,17 @@ export function toggleWrap(marker: string): StateCommand {
 	const kind = WRAP_NODES[marker];
 	return ({ state, dispatch }) => {
 		if (state.readOnly) return false;
+		const n = marker.length;
 		const tr = state.changeByRange((range) => {
+			// `**|**` left by a previous toggle on empty space: take the markers back out.
+			if (range.empty && state.sliceDoc(range.head - n, range.head + n) === marker + marker) {
+				const changes = state.changes({ from: range.head - n, to: range.head + n });
+				return { changes, range: range.map(changes) };
+			}
+
+			// A cursor on either edge of `**bold**` counts as inside, so the toggle undoes it.
 			const node: SyntaxNode | null = kind ? findNodeAt(state, range.from, kind.node) : null;
-			const inside =
-				node &&
-				(range.empty
-					? node.from < range.head && range.head < node.to
-					: node.from <= range.from && range.to <= node.to);
-			if (node && inside) {
+			if (node && node.from <= range.from && range.to <= node.to) {
 				const marks = node.getChildren(kind.mark);
 				const changes = state.changes(
 					[marks[0], marks[marks.length - 1]].map((m) => ({ from: m.from, to: m.to }))
@@ -47,7 +50,6 @@ export function toggleWrap(marker: string): StateCommand {
 				{ from, insert: marker },
 				{ from: to, insert: marker }
 			];
-			const n = marker.length;
 			if (range.empty) return { changes, range: EditorSelection.cursor(range.head + n) };
 			const [anchor, head] = range.anchor <= range.head ? [from, to] : [to, from];
 			return { changes, range: EditorSelection.range(anchor + n, head + n) };

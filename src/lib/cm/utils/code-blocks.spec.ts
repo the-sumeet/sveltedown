@@ -84,3 +84,34 @@ describe('codeBlockKeymap', () => {
 		expect(run('End', EditorSelection.single(1)).handled).toBe(false);
 	});
 });
+
+describe('review regressions', () => {
+	const homeFrom = (doc: string, cursor: number) => {
+		let state = stateOf(doc, EditorSelection.single(cursor));
+		const view = {
+			get state() {
+				return state;
+			},
+			dispatch: (spec: TransactionSpec) => (state = state.update(spec).state)
+		} as unknown as EditorView;
+		codeBlockKeymap.find((b) => b.key === 'Home')!.run(view);
+		return state.selection.main.head;
+	};
+
+	it('Home stays inside list indentation in a list-nested code block', () => {
+		const doc = '- item\n\n  ```\n  hello\n  ```';
+		expect(homeFrom(doc, doc.indexOf('llo'))).toBe(doc.indexOf('hello'));
+	});
+
+	it('Home stops after the quote marker in quoted code', () => {
+		const doc = '> ```\n> hello\n> ```';
+		expect(homeFrom(doc, doc.indexOf('llo'))).toBe(doc.indexOf('hello'));
+	});
+
+	it('maps clicks in quoted code past the quote markers', () => {
+		const doc = 'x\n\n> ```\n> ab\n> cd\n> ```';
+		const state = stateOf(doc);
+		const pos = codeOffsetToPos(state, doc.indexOf('> ```'), 'ab\ncd', 4)!;
+		expect(doc.slice(pos, pos + 1)).toBe('d');
+	});
+});

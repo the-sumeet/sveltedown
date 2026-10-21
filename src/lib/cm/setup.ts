@@ -12,6 +12,7 @@ import { inlineLivePreview } from './plugins/inline-live-preview.js';
 import { blockWidgets, widgetSnippets, type WidgetSnippets } from './plugins/block-widgets.js';
 import { editorKeymaps } from './keymaps.js';
 import { markdownTheme } from './theme.js';
+import { focusTracking } from './utils/cursor.js';
 
 /** Marks transactions that sync the document from the `value` prop, so they are not echoed back. */
 export const externalSync = Annotation.define<boolean>();
@@ -51,6 +52,7 @@ export function coreExtensions(): Extension[] {
 		history(),
 		markdown({ base: markdownLanguage }),
 		EditorView.lineWrapping,
+		focusTracking(),
 		inlineLivePreview(),
 		blockWidgets(),
 		markdownTheme(),
@@ -85,46 +87,64 @@ export function createEditor(options: EditorOptions): EditorController {
 	const userConf = new Compartment();
 	const snippetsConf = new Compartment();
 
+	// Last known values, so redundant calls (e.g. Svelte effects running on mount, or
+	// `setDoc` echoing what the user just typed) cost no transaction or diff.
+	let doc = options.doc;
+	let readonly = options.readonly ?? false;
+	let placeholder = options.placeholder ?? '';
+	let extensions = options.extensions ?? [];
+	let snippets = options.snippets ?? {};
+
 	const view = new EditorView({
 		parent: options.parent,
 		state: EditorState.create({
-			doc: options.doc,
+			doc,
 			extensions: [
 				coreExtensions(),
-				readonlyConf.of(readonlyExtension(options.readonly ?? false)),
-				placeholderConf.of(placeholderFor(options.placeholder ?? '')),
-				snippetsConf.of(widgetSnippets.of(options.snippets ?? {})),
+				readonlyConf.of(readonlyExtension(readonly)),
+				placeholderConf.of(placeholderFor(placeholder)),
+				snippetsConf.of(widgetSnippets.of(snippets)),
 				EditorView.updateListener.of((update) => {
 					if (!update.docChanged) return;
 					if (update.transactions.some((tr) => tr.annotation(externalSync))) return;
-					options.onDocChange(update.state.doc.toString());
+					doc = update.state.doc.toString();
+					options.onDocChange(doc);
 				}),
-				userConf.of(options.extensions ?? [])
+				userConf.of(extensions)
 			]
 		})
 	});
 
 	return {
 		view,
-		setDoc(doc) {
-			const current = view.state.doc.toString();
-			if (doc === current) return;
+		setDoc(next) {
+			if (next === doc) return;
+			const changes = diffChange(doc, next);
+			doc = next;
 			view.dispatch({
-				changes: diffChange(current, doc),
+				changes,
 				annotations: [externalSync.of(true), Transaction.addToHistory.of(false)]
 			});
 		},
-		setReadonly(readonly) {
-			view.dispatch({ effects: readonlyConf.reconfigure(readonlyExtension(readonly)) });
+		setReadonly(next) {
+			if (next === readonly) return;
+			readonly = next;
+			view.dispatch({ effects: readonlyConf.reconfigure(readonlyExtension(next)) });
 		},
-		setPlaceholder(placeholder) {
-			view.dispatch({ effects: placeholderConf.reconfigure(placeholderFor(placeholder)) });
+		setPlaceholder(next) {
+			if (next === placeholder) return;
+			placeholder = next;
+			view.dispatch({ effects: placeholderConf.reconfigure(placeholderFor(next)) });
 		},
-		setExtensions(extensions) {
-			view.dispatch({ effects: userConf.reconfigure(extensions) });
+		setExtensions(next) {
+			if (next === extensions) return;
+			extensions = next;
+			view.dispatch({ effects: userConf.reconfigure(next) });
 		},
-		setSnippets(snippets) {
-			view.dispatch({ effects: snippetsConf.reconfigure(widgetSnippets.of(snippets)) });
+		setSnippets(next) {
+			if (next.image === snippets.image && next.codeHeader === snippets.codeHeader) return;
+			snippets = next;
+			view.dispatch({ effects: snippetsConf.reconfigure(widgetSnippets.of(next)) });
 		},
 		destroy() {
 			view.destroy();

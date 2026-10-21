@@ -8,7 +8,8 @@ import {
 	type ViewUpdate
 } from '@codemirror/view';
 import type { SyntaxNode } from '@lezer/common';
-import { isCursorInRange } from '../utils/cursor.js';
+import { isRevealed, revealInputsChanged } from '../utils/cursor.js';
+import { linkDestination } from '../utils/syntax.js';
 
 /** Replacement that hides a piece of Markdown syntax. */
 export const hiddenMarkup = Decoration.replace({});
@@ -30,7 +31,7 @@ const inlineStyles: Record<string, { deco: Decoration; markName: string }> = {
 function addHeading(state: EditorState, node: SyntaxNode, level: number, out: Range<Decoration>[]) {
 	const line = state.doc.lineAt(node.from);
 	out.push(headingLines[level - 1].range(line.from));
-	if (isCursorInRange(state, line.from, line.to)) return;
+	if (isRevealed(state, line.from, line.to)) return;
 
 	for (const mark of node.getChildren('HeaderMark')) {
 		let { from, to } = mark;
@@ -55,11 +56,11 @@ function addLink(state: EditorState, node: SyntaxNode, out: Range<Decoration>[])
 		out.push(
 			Decoration.mark({
 				class: 'cm-md-link',
-				attributes: { 'data-url': state.doc.sliceString(url.from, url.to) }
+				attributes: { 'data-url': linkDestination(state, url) }
 			}).range(open.to, close.from)
 		);
 	}
-	if (isCursorInRange(state, node.from, node.to)) return;
+	if (isRevealed(state, node.from, node.to)) return;
 	out.push(hiddenMarkup.range(open.from, open.to));
 	out.push(hiddenMarkup.range(close.from, node.to));
 }
@@ -92,7 +93,7 @@ export function buildInlineDecorations(
 				const style = inlineStyles[name];
 				if (style) {
 					out.push(style.deco.range(ref.from, ref.to));
-					if (!isCursorInRange(state, ref.from, ref.to)) {
+					if (!isRevealed(state, ref.from, ref.to)) {
 						for (const mark of ref.node.getChildren(style.markName)) {
 							out.push(hiddenMarkup.range(mark.from, mark.to));
 						}
@@ -105,7 +106,7 @@ export function buildInlineDecorations(
 					if (marks.length < 2) return false;
 					const [open, close] = [marks[0], marks[marks.length - 1]];
 					if (close.from > open.to) out.push(inlineCode.range(open.to, close.from));
-					if (!isCursorInRange(state, ref.from, ref.to)) {
+					if (!isRevealed(state, ref.from, ref.to)) {
 						out.push(hiddenMarkup.range(open.from, open.to));
 						out.push(hiddenMarkup.range(close.from, close.to));
 					}
@@ -145,7 +146,8 @@ const inlinePlugin = ViewPlugin.fromClass(
 				update.docChanged ||
 				update.viewportChanged ||
 				update.selectionSet ||
-				syntaxTree(update.state) !== syntaxTree(update.startState)
+				syntaxTree(update.state) !== syntaxTree(update.startState) ||
+				revealInputsChanged(update.startState, update.state)
 			) {
 				this.decorations = buildInlineDecorations(update.state, update.view.visibleRanges);
 			}

@@ -2,7 +2,7 @@
 
 A live-preview Markdown editor for **Svelte 5**, built on **CodeMirror 6**, in the style of Typora and Obsidian.
 
-The document stays plain Markdown text. Syntax such as `**`, `#` and `[text](url)` is hidden while the cursor is elsewhere and shows again when the cursor moves into it. Images, task checkboxes, horizontal rules and code blocks render as interactive Svelte components.
+The document stays plain Markdown text. Syntax such as `**`, `#` and `[text](url)` is hidden while the cursor is elsewhere and shows again when the cursor moves into it. Nothing is revealed while the editor is unfocused or read-only, so the document reads as fully rendered. Images, task checkboxes, horizontal rules and code blocks render as interactive Svelte components.
 
 - Two-way `bind:value`, safe to render with SSR in SvelteKit
 - Headings, bold, italic, strikethrough, inline code and links styled in place
@@ -62,7 +62,7 @@ Changing `value` from outside updates the editor in place. Only the changed part
 </MarkdownEditor>
 ```
 
-Each snippet also receives `view`, the CodeMirror `EditorView`. If your content changes size after it renders, for example when an image loads, call `view.requestMeasure()` so cursor positions stay accurate.
+`codeHeaderSnippet` receives `language` (the first word of the fence's info string), `info` (the whole string, e.g. `ts title="a.ts"`) and `code`. Each snippet also receives `view`, the CodeMirror `EditorView`. If your content changes size after it renders, for example when an image loads, call `view.requestMeasure()` so cursor positions stay accurate.
 
 ## Keyboard shortcuts
 
@@ -98,13 +98,13 @@ Everything the editor draws reads `--md-*` CSS variables. The defaults have zero
 | `--md-code-bg`, `--md-code-block-bg`                       | Inline code and code blocks |
 | `--md-border`, `--md-selection`, `--md-caret`              | Rules, selection and caret  |
 
-The colours follow the system light/dark setting. To force one, set `data-theme="light"` or `data-theme="dark"` on the editor or any ancestor, such as `<html>`. The defaults use `light-dark()`, which needs Chrome 123+, Firefox 120+ or Safari 17.5+.
+The colours follow the system light/dark setting. To force one, set `data-theme="light"` or `data-theme="dark"` on the editor or any ancestor, such as `<html>`; the nearest one wins. This sets `color-scheme` on that element, which also themes native controls inside it. The defaults use `light-dark()`, which needs Chrome 123+, Firefox 120+ or Safari 17.5+.
 
 ## CodeMirror building blocks
 
 The extensions behind the component are exported too, for use in your own CodeMirror setup or alongside the `extensions` prop:
 
-- `inlineLivePreview()`, `blockWidgets()`, `markdownTheme()`, `editorKeymaps()` and `coreExtensions()` (all of them together)
+- `inlineLivePreview()`, `blockWidgets()`, `markdownTheme()`, `editorKeymaps()`, `focusTracking()` and `coreExtensions()` (all of them together). Without `focusTracking()`, syntax is revealed by cursor position alone.
 - the commands `toggleBold`, `toggleItalic`, `toggleStrikethrough`, `toggleWrap(marker)`, `insertLink` and `toggleTask`
 - `SvelteWidget`, a CodeMirror `WidgetType` that mounts any Svelte 5 component and updates its props in place
 - `createEditor()`, the framework-agnostic setup the component uses

@@ -7,11 +7,13 @@
 
 	let {
 		language,
+		info,
 		code,
 		headerSnippet,
 		view
 	}: {
 		language: string;
+		info: string;
 		code: string;
 		headerSnippet?: Snippet<[CodeHeaderSnippetProps]>;
 		view: EditorView;
@@ -70,9 +72,9 @@
 
 <div class="cm-md-code-header">
 	{#if headerSnippet}
-		{@render headerSnippet({ language, code, view })}
+		{@render headerSnippet({ language, info, code, view })}
 	{:else}
-		<CodeBlockHeader {language} {code} {view} />
+		<CodeBlockHeader {language} {info} {code} {view} />
 	{/if}
 </div>
 <!-- Scrolls on its own, so long lines don't wrap or widen the editor. Keyboard users

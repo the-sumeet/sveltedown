@@ -2,14 +2,25 @@ import { describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { tick } from 'svelte';
+import { EditorView } from '@codemirror/view';
 import MarkdownEditor from './MarkdownEditor.svelte';
 
 const content = () => page.elementLocator(document.querySelector('.cm-content')!);
 
 describe('MarkdownEditor', () => {
-	it('renders the initial value', async () => {
+	it('renders the initial value fully rendered until the editor is focused', async () => {
 		await render(MarkdownEditor, { value: '# Hello' });
+		await expect.element(content()).toHaveTextContent(/^Hello$/);
+		await userEvent.click(content());
 		await expect.element(content()).toHaveTextContent('# Hello');
+	});
+
+	it('hides revealed syntax again when the editor loses focus', async () => {
+		await render(MarkdownEditor, { value: 'a **b** c' });
+		await userEvent.click(page.getByText('b', { exact: true }));
+		await expect.element(content()).toHaveTextContent('a **b** c');
+		(document.activeElement as HTMLElement).blur();
+		await expect.element(content()).toHaveTextContent('a b c');
 	});
 
 	it('calls onchange when the user types', async () => {
@@ -66,6 +77,21 @@ describe('MarkdownEditor', () => {
 		expect(onchange).toHaveBeenLastCalledWith('- [ ] one\n- [ ] two');
 	});
 
+	it('dispatches nothing on mount or for values it already has', async () => {
+		let transactions = 0;
+		const counter = EditorView.updateListener.of((u) => (transactions += u.transactions.length));
+		const extensions = [counter];
+		const { rerender } = await render(MarkdownEditor, { value: 'x', extensions });
+		await tick();
+		expect(transactions).toBe(0);
+		await rerender({ value: 'x', extensions, readonly: false, placeholder: '' });
+		await tick();
+		expect(transactions).toBe(0);
+		await rerender({ value: 'y', extensions });
+		await tick();
+		expect(transactions).toBe(1);
+	});
+
 	describe('theme', () => {
 		const color = (selector: string) => getComputedStyle(document.querySelector(selector)!).color;
 
@@ -88,6 +114,18 @@ describe('MarkdownEditor', () => {
 			delete document.documentElement.dataset.theme;
 			expect(dark).not.toBe(light);
 			expect(dark).toBe('rgb(230, 237, 243)');
+		});
+
+		it('lets the nearest data-theme win', async () => {
+			document.documentElement.dataset.theme = 'dark';
+			const wrapper = document.createElement('div');
+			wrapper.dataset.theme = 'light';
+			document.body.append(wrapper);
+			await render(MarkdownEditor, { value: 'text' }, { baseElement: wrapper });
+			const editor = wrapper.querySelector('.cm-editor')!;
+			expect(getComputedStyle(editor).color).toBe('rgb(31, 35, 40)');
+			delete document.documentElement.dataset.theme;
+			wrapper.remove();
 		});
 	});
 

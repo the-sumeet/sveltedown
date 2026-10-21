@@ -68,9 +68,9 @@ test('applies updates made outside the editor', async ({ page }) => {
 	await page.getByRole('button', { name: 'Clear' }).click();
 	await expect(page.locator('.cm-placeholder')).toHaveText('Start writing…');
 
-	// The editor's cursor sits on this line (the doc was empty), so `## ` stays revealed.
+	// The editor isn't focused, so the heading renders without its `## `.
 	await source(page).fill('## From the textarea');
-	await expect(page.locator('.cm-md-h2')).toHaveText('## From the textarea');
+	await expect(page.locator('.cm-md-h2')).toHaveText('From the textarea');
 
 	await page.getByRole('button', { name: 'Reset' }).click();
 	await expect(page.locator('.cm-md-h1')).toContainText('Welcome to sveltedown');

@@ -3,7 +3,14 @@ import { EditorState } from '@codemirror/state';
 import { ensureSyntaxTree } from '@codemirror/language';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { createRawSnippet } from 'svelte';
-import { buildBlockDecorations, widgetSnippets, type WidgetSnippets } from './block-widgets.js';
+import { EditorView, type DecorationSet } from '@codemirror/view';
+import {
+	blockWidgetsField,
+	buildBlockDecorations,
+	widgetSnippets,
+	type WidgetSnippets
+} from './block-widgets.js';
+import { focusTracking, setEditorFocused } from '../utils/cursor.js';
 import { SvelteWidget } from '../utils/svelte-widget.svelte.js';
 import ImageWidget from '../../components/widgets/ImageWidget.svelte';
 import CheckboxWidget from '../../components/widgets/CheckboxWidget.svelte';
@@ -73,7 +80,12 @@ describe('buildBlockDecorations', () => {
 			const block = widgets[0].widget as SvelteWidget;
 			expect(block.component).toBe(CodeBlockWidget);
 			expect(block.options.block).toBe(true);
-			expect(block.props).toEqual({ language: 'ts', code: 'let a = 1;', headerSnippet: undefined });
+			expect(block.props).toEqual({
+				language: 'ts',
+				info: 'ts',
+				code: 'let a = 1;',
+				headerSnippet: undefined
+			});
 			expect(lines).toEqual([]);
 		});
 		it('shows the raw, styled lines when the cursor is inside', () => {
@@ -115,5 +127,118 @@ describe('SvelteWidget.eq', () => {
 		const a = new SvelteWidget(CheckboxWidget, { checked: true });
 		expect(a.eq(new SvelteWidget(CheckboxWidget, { checked: true }))).toBe(true);
 		expect(a.eq(new SvelteWidget(CheckboxWidget, { checked: false }))).toBe(false);
+	});
+});
+
+describe('review regressions', () => {
+	const props = (doc: string, cursor = 0) =>
+		(build(doc, cursor).widgets[0].widget as SvelteWidget).props;
+
+	it('strips blockquote markers from code inside a quote', () => {
+		expect(props('x\n\n> ```js\n> foo\n>   bar\n>\n> baz\n> ```\n\nend').code).toBe(
+			'foo\n  bar\n\nbaz'
+		);
+	});
+
+	it('strips top-level fence indentation as CommonMark specifies', () => {
+		expect(props('x\n\n  ```\n  a\n    b\n\n  c\n  ```').code).toBe('a\n  b\n\nc');
+	});
+
+	it('keeps list bullets visible: the widget starts at the fence, not the line', () => {
+		const doc = 'x\n\n- ```js\n  code\n  ```\n\nend';
+		const [block] = build(doc, 0).widgets;
+		expect(doc.slice(block.from, block.from + 3)).toBe('```');
+		expect((block.widget as SvelteWidget).props.code).toBe('code');
+	});
+
+	it('uses the first word of the info string as the language', () => {
+		expect(props('x\n\n```ts title="a.ts" {1,3}\ncode\n```')).toMatchObject({
+			language: 'ts',
+			info: 'ts title="a.ts" {1,3}'
+		});
+	});
+
+	it('decodes angle-bracket destinations and escapes in image URLs and titles', () => {
+		expect(props('x\n\n![a](<my img.png> "say \\"hi\\"")')).toMatchObject({
+			src: 'my img.png',
+			title: 'say "hi"'
+		});
+	});
+});
+
+describe('reveal depends on focus and editability', () => {
+	const doc = 'x\n\n![a](a.png)';
+	const imageCount = (state: EditorState) => {
+		let count = 0;
+		state.field(blockWidgetsField).between(0, state.doc.length, (_f, _t, v) => {
+			if (v.spec.widget instanceof SvelteWidget) count++;
+		});
+		return count;
+	};
+	const create = (editable = true) => {
+		const state = EditorState.create({
+			doc,
+			selection: { anchor: doc.length },
+			extensions: [
+				markdown({ base: markdownLanguage }),
+				focusTracking(),
+				blockWidgetsField,
+				EditorView.editable.of(editable)
+			]
+		});
+		ensureSyntaxTree(state, doc.length);
+		return state.update({}).state;
+	};
+
+	it('keeps everything rendered until the editor is focused', () => {
+		const state = create();
+		expect(imageCount(state)).toBe(1);
+		const focused = state.update({ effects: setEditorFocused.of(true) }).state;
+		expect(imageCount(focused)).toBe(0);
+		expect(imageCount(focused.update({ effects: setEditorFocused.of(false) }).state)).toBe(1);
+	});
+
+	it('never reveals source in a read-only editor', () => {
+		const state = create(false).update({ effects: setEditorFocused.of(true) }).state;
+		expect(imageCount(state)).toBe(1);
+	});
+});
+
+describe('selection-only updates', () => {
+	const doc = '```\nfar away\n```\n\npara one\n\npara two\n\n![a](a.png)';
+	const stateAt = (cursor: number) => {
+		const state = EditorState.create({
+			doc,
+			selection: { anchor: cursor },
+			extensions: [markdown({ base: markdownLanguage }), blockWidgetsField]
+		});
+		ensureSyntaxTree(state, doc.length);
+		return state;
+	};
+	const widgetsOf = (state: EditorState) => {
+		const out: SvelteWidget[] = [];
+		state.field(blockWidgetsField).between(0, doc.length, (_f, _t, v) => {
+			if (v.spec.widget instanceof SvelteWidget) out.push(v.spec.widget);
+		});
+		return out;
+	};
+
+	it('keeps untouched widgets and matches a full rebuild', () => {
+		const start = stateAt(doc.indexOf('para one'));
+		const [codeBefore] = widgetsOf(start);
+		const moved = start.update({ selection: { anchor: doc.indexOf('para two') } }).state;
+		expect(widgetsOf(moved)[0]).toBe(codeBefore);
+
+		const intoImage = moved.update({ selection: { anchor: doc.length - 2 } }).state;
+		const expected = buildBlockDecorations(intoImage);
+		const ranges = (set: DecorationSet) => {
+			const out: string[] = [];
+			set.between(0, doc.length, (f, t, v) => {
+				out.push(`${f}-${t}:${v.spec.class ?? v.spec.widget?.constructor.name}`);
+			});
+			return out;
+		};
+		expect(ranges(intoImage.field(blockWidgetsField))).toEqual(ranges(expected));
+		expect(widgetsOf(intoImage)).toHaveLength(1);
 	});
 });

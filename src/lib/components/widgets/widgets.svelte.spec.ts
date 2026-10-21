@@ -137,6 +137,22 @@ describe('code blocks', () => {
 	});
 });
 
+describe('review regressions', () => {
+	it('keeps a code block rendered when clicked in a read-only editor', async () => {
+		await render(MarkdownEditor, { value: 'intro\n\n```js\nlet a = 1;\n```', readonly: true });
+		await page.elementLocator(document.querySelector('.cm-md-code-pre')!).click();
+		await expect.element(page.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+		expect(document.querySelector('.cm-content')!.textContent).not.toContain('```');
+	});
+
+	it('keeps the list bullet visible next to a code block', async () => {
+		await render(MarkdownEditor, { value: 'intro\n\n- ```js\n  code\n  ```\n\nend' });
+		await expect.element(page.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+		const lines = [...document.querySelectorAll('.cm-line')].map((l) => l.textContent);
+		expect(lines).toContain('- ');
+	});
+});
+
 describe('cleanup', () => {
 	it('unmounts every Svelte widget when the editor is destroyed', async () => {
 		const toDOM = vi.spyOn(SvelteWidget.prototype, 'toDOM');

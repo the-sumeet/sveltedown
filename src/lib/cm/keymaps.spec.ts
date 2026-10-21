@@ -51,7 +51,10 @@ describe('toggleBold', () => {
 		['keeps whitespace outside the markers', 'a[ word ]b', 'a **[word]** b'],
 		['unwraps when the cursor is inside', 'a **wo|rd** b', 'a wo|rd b'],
 		['unwraps a selection inside', 'a **[word]** b', 'a [word] b'],
-		['unwraps a selection of the whole node', 'a [**word**] b', 'a [word] b']
+		['unwraps a selection of the whole node', 'a [**word**] b', 'a [word] b'],
+		['unwraps with the cursor right after the node', 'a **word**| b', 'a word| b'],
+		['unwraps with the cursor right before the node', 'a |**word** b', 'a |word b'],
+		['removes empty markers it inserted', 'a **|** b', 'a | b']
 	])('%s', (_, input, expected) => {
 		expect(run(toggleBold, input).result).toBe(expected);
 	});

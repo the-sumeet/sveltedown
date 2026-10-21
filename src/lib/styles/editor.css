@@ -6,11 +6,11 @@
  * class passed through the `class` prop.
  *
  * Colours follow the system light/dark preference. Force one with `data-theme="light"`
- * or `data-theme="dark"` on the editor or any ancestor (e.g. <html>).
+ * or `data-theme="dark"` on the editor or any ancestor (e.g. <html>); the nearest one
+ * wins. Note that this sets `color-scheme` on that element, which also themes native
+ * controls inside it.
  */
 :where(.sveltedown) {
-	color-scheme: light dark;
-
 	--md-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
 	--md-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 	--md-font-size: 16px;
@@ -30,12 +30,16 @@
 	--md-caret: var(--md-text);
 }
 
-:where([data-theme='light']) :where(.sveltedown),
-:where(.sveltedown[data-theme='light']) {
+/* No theme chosen around the editor: follow the system. Otherwise `color-scheme` is
+   inherited from the nearest element with `data-theme`, so the closest choice wins. */
+:where(.sveltedown:not([data-theme], [data-theme] *)) {
+	color-scheme: light dark;
+}
+
+:where([data-theme='light']) {
 	color-scheme: light;
 }
 
-:where([data-theme='dark']) :where(.sveltedown),
-:where(.sveltedown[data-theme='dark']) {
+:where([data-theme='dark']) {
 	color-scheme: dark;
 }

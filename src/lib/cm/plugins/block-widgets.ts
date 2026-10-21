@@ -11,9 +11,10 @@ import { Decoration, EditorView, WidgetType, keymap, type DecorationSet } from '
 import type { SyntaxNode } from '@lezer/common';
 import type { Component, Snippet } from 'svelte';
 import type { CodeHeaderSnippetProps, ImageSnippetProps } from '../../types.js';
-import { isCursorInRange } from '../utils/cursor.js';
+import { isRevealed, revealInputsChanged } from '../utils/cursor.js';
 import { SvelteWidget } from '../utils/svelte-widget.svelte.js';
-import { codeBlockKeymap } from '../utils/code-blocks.js';
+import { codeBlockKeymap, fencedCodeParts } from '../utils/code-blocks.js';
+import { linkDestination, linkTitle } from '../utils/syntax.js';
 import ImageWidget from '../../components/widgets/ImageWidget.svelte';
 import CheckboxWidget from '../../components/widgets/CheckboxWidget.svelte';
 import CodeBlockWidget from '../../components/widgets/CodeBlockWidget.svelte';
@@ -69,52 +70,45 @@ function snippetOr<P extends Record<string, unknown>>(
 }
 
 function addImage(state: EditorState, node: SyntaxNode, out: Range<Decoration>[]) {
-	if (isCursorInRange(state, node.from, node.to)) return;
+	if (isRevealed(state, node.from, node.to)) return;
 	const marks = node.getChildren('LinkMark');
 	const url = node.getChild('URL');
 	if (!url || marks.length < 2) return;
 	const title = node.getChild('LinkTitle');
 	const props = {
-		src: state.sliceDoc(url.from, url.to),
+		src: linkDestination(state, url),
 		alt: state.sliceDoc(marks[0].to, marks[1].from),
-		title: title ? state.sliceDoc(title.from + 1, title.to - 1) : undefined
+		title: title ? linkTitle(state, title) : undefined
 	};
 	const snippet = state.facet(widgetSnippets).image;
 	const widget = snippetOr(snippet, ImageWidget, props, 'cm-md-image');
 	out.push(Decoration.replace({ widget }).range(node.from, node.to));
 }
 
-/**
- * Code between the fences, with the fence's own indentation removed from each line.
- * Read line by line: inside containers (lists, quotes) the parser splits `CodeText`.
- */
-function fencedCodeText(state: EditorState, node: SyntaxNode, closed: boolean): string {
-	const open = state.doc.lineAt(node.from);
-	const last = state.doc.lineAt(node.to).number - (closed ? 1 : 0);
-	const strip = new RegExp(`^ {0,${node.from - open.from}}`);
-	const lines: string[] = [];
-	for (let n = open.number + 1; n <= last; n++) {
-		lines.push(state.doc.line(n).text.replace(strip, ''));
-	}
-	return lines.join('\n');
+/** The range a block node's decorations live in. Code blocks reveal per whole line. */
+function extentOf(state: EditorState, node: SyntaxNode): { from: number; to: number } {
+	if (node.name !== 'FencedCode') return { from: node.from, to: node.to };
+	return { from: state.doc.lineAt(node.from).from, to: state.doc.lineAt(node.to).to };
 }
 
 /**
- * Away from the cursor the whole block (full lines, fences included) becomes one
- * scrollable widget. Near it, the raw lines are styled and do not wrap.
+ * Away from the cursor the block becomes one scrollable widget, starting at the fence
+ * so container markup before it (a list bullet, `>`) stays visible. Near it, the raw
+ * lines are styled and do not wrap.
  */
 function addFencedCode(state: EditorState, node: SyntaxNode, out: Range<Decoration>[]) {
-	const first = state.doc.lineAt(node.from);
-	const last = state.doc.lineAt(node.to);
+	const { from, to } = extentOf(state, node);
+	const first = state.doc.lineAt(from).number;
+	const last = state.doc.lineAt(to).number;
 
-	if (isCursorInRange(state, first.from, last.to)) {
-		for (let n = first.number; n <= last.number; n++) {
+	if (isRevealed(state, from, to)) {
+		for (let n = first; n <= last; n++) {
 			const deco =
-				first.number === last.number
+				first === last
 					? codeLineSingle
-					: n === first.number
+					: n === first
 						? codeLineBegin
-						: n === last.number
+						: n === last
 							? codeLineEnd
 							: codeLine;
 			out.push(deco.range(state.doc.line(n).from));
@@ -122,20 +116,52 @@ function addFencedCode(state: EditorState, node: SyntaxNode, out: Range<Decorati
 		return;
 	}
 
-	const open = node.firstChild!;
-	const close = node.lastChild!;
-	const closed = close !== open && close.name === 'CodeMark' && last.number !== first.number;
-	const info = node.getChild('CodeInfo');
+	const { language, info, code } = fencedCodeParts(state, node);
 	const widget = new SvelteWidget(
 		CodeBlockWidget,
-		{
-			language: info ? state.sliceDoc(info.from, info.to) : '',
-			code: fencedCodeText(state, node, closed),
-			headerSnippet: state.facet(widgetSnippets).codeHeader
-		},
+		{ language, info, code, headerSnippet: state.facet(widgetSnippets).codeHeader },
 		{ block: true, class: 'cm-md-codeblock-widget' }
 	);
-	out.push(Decoration.replace({ widget, block: true }).range(first.from, last.to));
+	out.push(Decoration.replace({ widget, block: true }).range(node.from, to));
+}
+
+const BLOCK_NODES = new Set(['Image', 'TaskMarker', 'HorizontalRule', 'FencedCode']);
+
+/** Adds decorations for the block nodes overlapping `[from, to]`, reporting each node's extent. */
+function collect(
+	state: EditorState,
+	from: number,
+	to: number,
+	out: Range<Decoration>[],
+	onNode?: (extent: { from: number; to: number }) => void
+) {
+	syntaxTree(state).iterate({
+		from,
+		to,
+		enter: (ref) => {
+			if (!BLOCK_NODES.has(ref.name)) return;
+			onNode?.(extentOf(state, ref.node));
+			switch (ref.name) {
+				case 'Image':
+					addImage(state, ref.node, out);
+					break;
+				case 'TaskMarker': {
+					const checked = /^\[[xX]\]$/.test(state.sliceDoc(ref.from, ref.to));
+					const widget = new SvelteWidget(CheckboxWidget, { checked }, { class: 'cm-md-task' });
+					out.push(Decoration.replace({ widget }).range(ref.from, ref.to));
+					break;
+				}
+				case 'HorizontalRule':
+					if (!isRevealed(state, ref.from, ref.to))
+						out.push(horizontalRule.range(ref.from, ref.to));
+					break;
+				case 'FencedCode':
+					addFencedCode(state, ref.node, out);
+					break;
+			}
+			return false;
+		}
+	});
 }
 
 /**
@@ -144,30 +170,35 @@ function addFencedCode(state: EditorState, node: SyntaxNode, out: Range<Decorati
  */
 export function buildBlockDecorations(state: EditorState): DecorationSet {
 	const out: Range<Decoration>[] = [];
-	syntaxTree(state).iterate({
-		enter: (ref) => {
-			switch (ref.name) {
-				case 'Image':
-					addImage(state, ref.node, out);
-					return false;
-				case 'TaskMarker': {
-					const checked = /^\[[xX]\]$/.test(state.sliceDoc(ref.from, ref.to));
-					const widget = new SvelteWidget(CheckboxWidget, { checked }, { class: 'cm-md-task' });
-					out.push(Decoration.replace({ widget }).range(ref.from, ref.to));
-					return false;
-				}
-				case 'HorizontalRule':
-					if (!isCursorInRange(state, ref.from, ref.to)) {
-						out.push(horizontalRule.range(ref.from, ref.to));
-					}
-					return false;
-				case 'FencedCode':
-					addFencedCode(state, ref.node, out);
-					return false;
-			}
-		}
-	});
+	collect(state, 0, state.doc.length, out);
 	return Decoration.set(out, true);
+}
+
+/**
+ * After a selection-only change, only nodes on lines touched by the old or new
+ * selection can switch between rendered and revealed: rebuild just those.
+ */
+function updateForSelection(
+	decorations: DecorationSet,
+	startState: EditorState,
+	state: EditorState
+): DecorationSet {
+	const extents = new Map<number, { from: number; to: number }>();
+	const out: Range<Decoration>[] = [];
+	for (const range of [...startState.selection.ranges, ...state.selection.ranges]) {
+		const from = state.doc.lineAt(range.from).from;
+		const to = state.doc.lineAt(range.to).to;
+		collect(state, from, to, [], (extent) => extents.set(extent.from, extent));
+	}
+	if (!extents.size) return decorations;
+	for (const extent of extents.values()) collect(state, extent.from, extent.to, out);
+	const inside = (from: number, to: number) =>
+		[...extents.values()].some((e) => from >= e.from && to <= e.to);
+	return decorations.update({
+		filter: (from, to) => !inside(from, to),
+		add: out.filter((range) => inside(range.from, range.to)),
+		sort: true
+	});
 }
 
 /** Block and widget decorations. A StateField, since some of them change line layout. */
@@ -176,12 +207,13 @@ export const blockWidgetsField = StateField.define<DecorationSet>({
 	update(decorations, tr) {
 		if (
 			tr.docChanged ||
-			tr.selection ||
 			syntaxTree(tr.state) !== syntaxTree(tr.startState) ||
-			tr.state.facet(widgetSnippets) !== tr.startState.facet(widgetSnippets)
+			tr.state.facet(widgetSnippets) !== tr.startState.facet(widgetSnippets) ||
+			revealInputsChanged(tr.startState, tr.state)
 		) {
 			return buildBlockDecorations(tr.state);
 		}
+		if (tr.selection) return updateForSelection(decorations, tr.startState, tr.state);
 		return decorations;
 	},
 	provide: (field) => EditorView.decorations.from(field)

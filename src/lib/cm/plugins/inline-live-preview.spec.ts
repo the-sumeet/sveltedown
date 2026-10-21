@@ -3,7 +3,8 @@ import { EditorSelection, EditorState } from '@codemirror/state';
 import { ensureSyntaxTree } from '@codemirror/language';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { buildInlineDecorations, hiddenMarkup } from './inline-live-preview.js';
-import { isCursorInRange } from '../utils/cursor.js';
+import { focusTracking, isCursorInRange, setEditorFocused } from '../utils/cursor.js';
+import { EditorView } from '@codemirror/view';
 
 function stateWith(doc: string, cursor: number | [number, number]) {
 	const selection = Array.isArray(cursor)
@@ -122,5 +123,53 @@ describe('buildInlineDecorations', () => {
 	it('does not hide anything inside fenced code', () => {
 		const doc = '```\n**not bold**\n```\nx';
 		expect(decorations(doc, doc.length).hidden).toEqual([]);
+	});
+});
+
+describe('review regressions', () => {
+	it('decodes angle-bracket link destinations for Mod-click', () => {
+		const doc = 'see [x](<https://a.b/c d>) y';
+		const state = stateWith(doc, doc.length);
+		const urls: string[] = [];
+		buildInlineDecorations(state, [{ from: 0, to: doc.length }]).between(
+			0,
+			doc.length,
+			(_f, _t, v) => {
+				if (v.spec.attributes) urls.push(v.spec.attributes['data-url']);
+			}
+		);
+		expect(urls).toEqual(['https://a.b/c d']);
+	});
+
+	it('only reveals syntax while focused and editable', () => {
+		const doc = '**bold** x';
+		const make = (editable: boolean) => {
+			const state = EditorState.create({
+				doc,
+				selection: EditorSelection.cursor(3),
+				extensions: [
+					markdown({ base: markdownLanguage }),
+					focusTracking(),
+					EditorView.editable.of(editable)
+				]
+			});
+			ensureSyntaxTree(state, doc.length);
+			return state;
+		};
+		const hiddenCount = (state: EditorState) => {
+			let n = 0;
+			buildInlineDecorations(state, [{ from: 0, to: doc.length }]).between(
+				0,
+				doc.length,
+				(_f, _t, v) => {
+					if (v === hiddenMarkup) n++;
+				}
+			);
+			return n;
+		};
+		const unfocused = make(true);
+		expect(hiddenCount(unfocused)).toBe(2);
+		expect(hiddenCount(unfocused.update({ effects: setEditorFocused.of(true) }).state)).toBe(0);
+		expect(hiddenCount(make(false).update({ effects: setEditorFocused.of(true) }).state)).toBe(2);
 	});
 });

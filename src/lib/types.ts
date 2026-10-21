@@ -12,7 +12,10 @@ export interface ImageSnippetProps {
 
 /** Props passed to a custom `codeHeaderSnippet`. */
 export interface CodeHeaderSnippetProps {
+	/** First word of the fence's info string, e.g. `ts` for ` ```ts title="a.ts" `. */
 	language: string;
+	/** The whole info string, for headers that show titles or other metadata. */
+	info: string;
 	code: string;
 	view: EditorView;
 }

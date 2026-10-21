@@ -14,7 +14,7 @@ export {
 	widgetSnippets,
 	type WidgetSnippets
 } from './cm/plugins/block-widgets.js';
-export { isCursorInRange } from './cm/utils/cursor.js';
+export { focusTracking, isCursorInRange, isRevealed, setEditorFocused } from './cm/utils/cursor.js';
 export { toggleTask } from './cm/utils/tasks.js';
 export { SvelteWidget, type SvelteWidgetOptions } from './cm/utils/svelte-widget.svelte.js';
 export {
