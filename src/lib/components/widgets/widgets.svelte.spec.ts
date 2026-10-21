@@ -1,0 +1,148 @@
+import { describe, expect, it, vi } from 'vitest';
+import { page, userEvent } from 'vitest/browser';
+import { render } from 'vitest-browser-svelte';
+import { createRawSnippet } from 'svelte';
+import MarkdownEditor from '../MarkdownEditor.svelte';
+import { SvelteWidget } from '../../cm/utils/svelte-widget.svelte.js';
+import type { ImageSnippetProps } from '../../types.js';
+
+// 1x1 transparent PNG, so no network is involved.
+const PIXEL =
+	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+describe('task checkboxes', () => {
+	it('toggles the Markdown source when clicked', async () => {
+		const onchange = vi.fn();
+		await render(MarkdownEditor, { value: 'intro\n\n- [ ] todo', onchange });
+		const box = page.getByRole('checkbox');
+		await expect.element(box).not.toBeChecked();
+
+		await box.click();
+		expect(onchange).toHaveBeenLastCalledWith('intro\n\n- [x] todo');
+		await expect.element(box).toBeChecked();
+
+		await box.click();
+		expect(onchange).toHaveBeenLastCalledWith('intro\n\n- [ ] todo');
+		await expect.element(box).not.toBeChecked();
+	});
+
+	it('does not toggle in a read-only editor', async () => {
+		const onchange = vi.fn();
+		await render(MarkdownEditor, { value: '- [ ] todo', readonly: true, onchange });
+		const box = page.getByRole('checkbox');
+		await box.click();
+		await expect.element(box).not.toBeChecked();
+		expect(onchange).not.toHaveBeenCalled();
+	});
+});
+
+describe('images', () => {
+	it('renders an image preview away from the cursor', async () => {
+		await render(MarkdownEditor, { value: `intro\n\n![a pixel](${PIXEL})` });
+		await expect.element(page.getByRole('img', { name: 'a pixel' })).toBeInTheDocument();
+	});
+
+	it('shows a fallback when the image fails to load', async () => {
+		await render(MarkdownEditor, { value: 'intro\n\n![broken](data:image/png;base64,AAAA)' });
+		await expect.element(page.getByText('Image failed to load: broken')).toBeInTheDocument();
+	});
+
+	it('renders a custom image snippet', async () => {
+		const imageSnippet = createRawSnippet<[ImageSnippetProps]>((props) => ({
+			render: () => `<em class="custom-image">${props().alt}</em>`
+		}));
+		await render(MarkdownEditor, { value: `intro\n\n![custom](${PIXEL})`, imageSnippet });
+		await expect.element(page.getByText('custom')).toHaveClass('custom-image');
+		expect(document.querySelector('.cm-md-image img')).toBeNull();
+	});
+});
+
+describe('code blocks', () => {
+	it('shows the language and a copy button away from the cursor', async () => {
+		await render(MarkdownEditor, { value: 'intro\n\n```ts\nlet a = 1;\n```' });
+		await expect.element(page.getByText('ts', { exact: true })).toBeInTheDocument();
+		await expect.element(page.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+		expect(document.querySelector('.cm-content')!.textContent).not.toContain('```');
+	});
+
+	const longLine = `const x = [${'1, '.repeat(200)}];`;
+	const longParagraph = 'words '.repeat(200);
+	const longDoc = `intro\n\n\`\`\`js\n${longLine}\n\`\`\`\n\n${longParagraph}`;
+	const scroller = () => document.querySelector<HTMLElement>('.cm-scroller')!;
+
+	it('scrolls long lines inside the rendered block, not the editor', async () => {
+		await render(MarkdownEditor, { value: longDoc });
+		await expect.element(page.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+		const pre = document.querySelector<HTMLElement>('.cm-md-code-pre')!;
+		expect(pre.scrollWidth).toBeGreaterThan(pre.clientWidth);
+		expect(pre.getClientRects()[0].height).toBeLessThan(60);
+		expect(scroller().scrollWidth).toBeLessThanOrEqual(scroller().clientWidth);
+	});
+
+	it('does not wrap long lines while editing the block', async () => {
+		await render(MarkdownEditor, { value: longDoc });
+		await page.elementLocator(document.querySelector('.cm-md-code-pre')!).click();
+		await expect.element(page.getByText('```js')).toBeInTheDocument();
+		const line = [...document.querySelectorAll<HTMLElement>('.cm-line')].find((l) =>
+			l.textContent?.startsWith('const x')
+		)!;
+		expect(line.classList).toContain('cm-md-codeblock');
+		const oneLine = document.querySelector<HTMLElement>('.cm-line')!.offsetHeight;
+		expect(line.offsetHeight).toBeLessThan(oneLine * 1.5);
+		expect(scroller().scrollWidth).toBeGreaterThan(scroller().clientWidth);
+
+		// Other text keeps wrapping at the editor width.
+		const paragraph = [...document.querySelectorAll<HTMLElement>('.cm-line')].find((l) =>
+			l.textContent?.startsWith('words')
+		)!;
+		expect(paragraph.offsetHeight).toBeGreaterThan(oneLine * 2);
+	});
+
+	it('opens the block with the cursor at the clicked character', async () => {
+		const onchange = vi.fn();
+		await render(MarkdownEditor, { value: 'intro\n\n```\nlet abc = 1;\n```', onchange });
+		const code = document.querySelector('.cm-md-code-pre code')!;
+		const range = document.createRange();
+		range.setStart(code.firstChild!, 4);
+		range.setEnd(code.firstChild!, 5);
+		const char = range.getBoundingClientRect();
+		const pre = code.parentElement!.getBoundingClientRect();
+		await page.elementLocator(code.parentElement!).click({
+			position: { x: char.left - pre.left + 1, y: char.top - pre.top + char.height / 2 }
+		});
+		await userEvent.keyboard('Z');
+		expect(onchange).toHaveBeenLastCalledWith('intro\n\n```\nlet Zabc = 1;\n```');
+	});
+
+	it('moves End to the real end of a long line and scrolls to it', async () => {
+		const onchange = vi.fn();
+		await render(MarkdownEditor, { value: longDoc, onchange });
+		await page.elementLocator(document.querySelector('.cm-md-code-pre')!).click({
+			position: { x: 5, y: 10 }
+		});
+		await userEvent.keyboard('{End}');
+		await expect.poll(() => scroller().scrollLeft).toBeGreaterThan(0);
+		await userEvent.keyboard('!');
+		expect(onchange.mock.lastCall![0]).toContain(`${longLine}!`);
+
+		await userEvent.keyboard('{Home}');
+		await expect.poll(() => scroller().scrollLeft).toBeLessThan(20);
+	});
+});
+
+describe('cleanup', () => {
+	it('unmounts every Svelte widget when the editor is destroyed', async () => {
+		const toDOM = vi.spyOn(SvelteWidget.prototype, 'toDOM');
+		const destroy = vi.spyOn(SvelteWidget.prototype, 'destroy');
+		const { unmount } = await render(MarkdownEditor, {
+			value: `intro\n\n![a](${PIXEL})\n\n- [ ] one\n- [x] two\n\n\`\`\`\ncode\n\`\`\``
+		});
+		await expect.element(page.getByRole('img')).toBeInTheDocument();
+		expect(toDOM).toHaveBeenCalledTimes(4);
+
+		await unmount();
+		expect(destroy).toHaveBeenCalledTimes(4);
+		toDOM.mockRestore();
+		destroy.mockRestore();
+	});
+});

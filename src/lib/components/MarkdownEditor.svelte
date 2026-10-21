@@ -9,8 +9,12 @@
 		readonly = false,
 		class: className = '',
 		onchange,
+		imageSnippet,
+		codeHeaderSnippet,
 		extensions = []
 	}: MarkdownEditorProps = $props();
+
+	const snippets = $derived({ image: imageSnippet, codeHeader: codeHeaderSnippet });
 
 	let container: HTMLDivElement;
 	let editor: EditorController | undefined = $state();
@@ -23,6 +27,7 @@
 			readonly,
 			placeholder,
 			extensions,
+			snippets,
 			onDocChange(doc) {
 				// After this, `value` equals the doc, so the sync effect below is a no-op.
 				value = doc;
@@ -51,6 +56,10 @@
 
 	$effect(() => {
 		editor?.setExtensions(extensions);
+	});
+
+	$effect(() => {
+		editor?.setSnippets(snippets);
 	});
 </script>
 

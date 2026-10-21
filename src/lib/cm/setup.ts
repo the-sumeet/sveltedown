@@ -9,6 +9,7 @@ import { EditorView, keymap, placeholder as placeholderExtension } from '@codemi
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { inlineLivePreview } from './plugins/inline-live-preview.js';
+import { blockWidgets, widgetSnippets, type WidgetSnippets } from './plugins/block-widgets.js';
 
 /** Marks transactions that sync the document from the `value` prop, so they are not echoed back. */
 export const externalSync = Annotation.define<boolean>();
@@ -19,6 +20,7 @@ export interface EditorOptions {
 	readonly?: boolean;
 	placeholder?: string;
 	extensions?: Extension[];
+	snippets?: WidgetSnippets;
 	/** Called after user edits (not after `setDoc`). */
 	onDocChange: (doc: string) => void;
 }
@@ -29,6 +31,7 @@ export interface EditorController {
 	setReadonly(readonly: boolean): void;
 	setPlaceholder(placeholder: string): void;
 	setExtensions(extensions: Extension[]): void;
+	setSnippets(snippets: WidgetSnippets): void;
 	destroy(): void;
 }
 
@@ -47,6 +50,7 @@ export function coreExtensions(): Extension[] {
 		markdown({ base: markdownLanguage }),
 		EditorView.lineWrapping,
 		inlineLivePreview(),
+		blockWidgets(),
 		keymap.of([...defaultKeymap, ...historyKeymap])
 	];
 }
@@ -76,6 +80,7 @@ export function createEditor(options: EditorOptions): EditorController {
 	const readonlyConf = new Compartment();
 	const placeholderConf = new Compartment();
 	const userConf = new Compartment();
+	const snippetsConf = new Compartment();
 
 	const view = new EditorView({
 		parent: options.parent,
@@ -85,6 +90,7 @@ export function createEditor(options: EditorOptions): EditorController {
 				coreExtensions(),
 				readonlyConf.of(readonlyExtension(options.readonly ?? false)),
 				placeholderConf.of(placeholderFor(options.placeholder ?? '')),
+				snippetsConf.of(widgetSnippets.of(options.snippets ?? {})),
 				EditorView.updateListener.of((update) => {
 					if (!update.docChanged) return;
 					if (update.transactions.some((tr) => tr.annotation(externalSync))) return;
@@ -113,6 +119,9 @@ export function createEditor(options: EditorOptions): EditorController {
 		},
 		setExtensions(extensions) {
 			view.dispatch({ effects: userConf.reconfigure(extensions) });
+		},
+		setSnippets(snippets) {
+			view.dispatch({ effects: snippetsConf.reconfigure(widgetSnippets.of(snippets)) });
 		},
 		destroy() {
 			view.destroy();

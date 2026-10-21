@@ -81,6 +81,8 @@ export function buildInlineDecorations(
 			to,
 			enter: (ref) => {
 				const name = ref.name;
+				// Rendered as a widget by the block field; decorating inside it would collide.
+				if (name === 'Image') return false;
 				const heading = /^ATXHeading([1-6])$/.exec(name);
 				if (heading) {
 					addHeading(state, ref.node, Number(heading[1]), out);

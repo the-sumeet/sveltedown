@@ -8,4 +8,12 @@ export {
 	type EditorOptions
 } from './cm/setup.js';
 export { inlineLivePreview, buildInlineDecorations } from './cm/plugins/inline-live-preview.js';
+export {
+	blockWidgets,
+	buildBlockDecorations,
+	widgetSnippets,
+	type WidgetSnippets
+} from './cm/plugins/block-widgets.js';
 export { isCursorInRange } from './cm/utils/cursor.js';
+export { toggleTask } from './cm/utils/tasks.js';
+export { SvelteWidget, type SvelteWidgetOptions } from './cm/utils/svelte-widget.svelte.js';
