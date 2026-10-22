@@ -15,26 +15,12 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 import EditorDemo from '../../components/demos/EditorDemo.svelte';
+import { homeSample } from '../../components/demos/samples';
 
 <EditorDemo
 	client:load
 	height="26rem"
-	value={`# Try it
-
-Click into this text. Syntax like **bold**, *italic* and [links](https://svelte.dev) shows as you move into it, and hides again when you move away.
-
-- [x] Task lists with real checkboxes
-- [ ] Press Enter here to add another
-
-| Feature | Shortcut |
-|:--|--:|
-| **Bold** | \`Mod-b\` |
-| Link | \`Mod-k\` |
-
-\`\`\`ts
-const editor = 'sveltedown'; // long lines scroll instead of wrapping
-\`\`\`
-`}
+	value={homeSample}
 />
 
 ## Features

@@ -4,23 +4,14 @@ description: What the editor renders, what it hides, and when the Markdown sourc
 ---
 
 import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+import { livePreviewSample } from '../../../components/demos/samples';
 
 The document is always plain Markdown. sveltedown decorates it as you type: syntax that isn't near the cursor is hidden and its content is styled, and some elements become interactive widgets.
 
 <EditorDemo
 	client:visible
 	height="22rem"
-	value={`# Heading
-
-Some **bold**, *italic*, ~~struck~~ and \`inline code\`, plus a [link](https://svelte.dev "Svelte").
-
-- [x] A finished task
-- [ ] Click a checkbox to toggle it
-
----
-
-![Svelte logo](%BASE%/logo.svg "Click the image to edit its source")
-`}
+	value={livePreviewSample}
 />
 
 ## When the source shows
@@ -54,9 +45,15 @@ Only `http`, `https` and `mailto` links open, so a `javascript:` URL in a docume
 
 `![alt](src "title")` renders the image. Clicking it moves the cursor into its source so you can edit the URL or alt text. If the image fails to load, a placeholder shows the alt text. You can [render images yourself](../custom-snippets/) with `imageSnippet`.
 
+## Lists
+
+Bullet markers (`-`, `*`, `+`) render as dots: filled at the top level, a ring one level down, then filled again. With the cursor on a marker, the raw marker shows. Numbered lists keep their numbers.
+
+Press Tab on an item to nest it under the item above, and Shift-Tab to move it back out. The item's children move with it. See [Keyboard shortcuts](../../reference/keyboard-shortcuts/).
+
 ## Task lists
 
-`- [ ]` and `- [x]` render as checkboxes. Clicking one rewrites the Markdown between `[ ]` and `[x]`. Checkboxes always render, even at the cursor. Press Enter at the end of a task to start a new one.
+`- [ ]` and `- [x]` render as checkboxes, without a bullet. Clicking one rewrites the Markdown between `[ ]` and `[x]`. Checkboxes always render, even at the cursor. Press Enter at the end of a task to start a new one.
 
 ## Horizontal rules
 
