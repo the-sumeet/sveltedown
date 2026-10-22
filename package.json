@@ -1,6 +1,6 @@
 {
 	"name": "@the-sumeet/sveltedown",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "A live-preview Markdown editor for Svelte 5, built on CodeMirror 6.",
 	"keywords": [
 		"svelte"
