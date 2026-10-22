@@ -41,12 +41,14 @@
 			offset === null
 				? widgetPos
 				: (codeOffsetToPos(view.state, widgetPos, code, offset) ?? widgetPos);
+		// Focus first: a blurred editor doesn't write its selection to the DOM, and on focus
+		// it would read back the stale browser selection from the widget we clicked.
+		view.focus();
 		view.dispatch({
 			selection: { anchor: pos },
 			scrollIntoView: true,
 			userEvent: 'select.pointer'
 		});
-		view.focus();
 	}
 </script>
 
