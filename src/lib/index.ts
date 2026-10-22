@@ -29,6 +29,7 @@ export {
 } from './cm/plugins/block-widgets.js';
 export { focusTracking, isCursorInRange, isRevealed, setEditorFocused } from './cm/utils/cursor.js';
 export { toggleTask } from './cm/utils/tasks.js';
+export { indentListItem, outdentListItem } from './cm/utils/lists.js';
 export { SvelteWidget, type SvelteWidgetOptions } from './cm/utils/svelte-widget.svelte.js';
 export {
 	editorKeymaps,

@@ -4,6 +4,7 @@ import {
 	Decoration,
 	EditorView,
 	ViewPlugin,
+	WidgetType,
 	type DecorationSet,
 	type ViewUpdate
 } from '@codemirror/view';
@@ -45,6 +46,49 @@ function addHeading(state: EditorState, node: SyntaxNode, level: number, out: Ra
 		}
 		if (from < to) out.push(hiddenMarkup.range(from, to));
 	}
+}
+
+/** A list bullet: a filled dot, hollow one level down, then filled again. */
+export class BulletWidget extends WidgetType {
+	constructor(readonly depth: number) {
+		super();
+	}
+	eq(other: BulletWidget) {
+		return other.depth === this.depth;
+	}
+	toDOM() {
+		const dom = document.createElement('span');
+		dom.className = `cm-md-bullet cm-md-bullet-${this.depth % 2 ? 'hollow' : 'filled'}`;
+		dom.setAttribute('aria-hidden', 'true');
+		return dom;
+	}
+}
+
+const listIndent = Decoration.mark({ class: 'cm-md-list-indent' });
+
+/**
+ * A bullet list marker becomes a dot; a task item's marker hides, leaving its checkbox.
+ * Leading indentation of every list item is set in monospace, so nesting stays visible.
+ */
+function addListMark(state: EditorState, mark: SyntaxNode, out: Range<Decoration>[]) {
+	const item = mark.parent;
+	if (!item || item.name !== 'ListItem') return;
+	const line = state.doc.lineAt(mark.from);
+	if (mark.from > line.from && /^\s+$/.test(state.sliceDoc(line.from, mark.from))) {
+		out.push(listIndent.range(line.from, mark.from));
+	}
+	if (item.parent?.name !== 'BulletList' || isRevealed(state, mark.from, mark.to)) return;
+
+	const task = item.getChild('Task')?.getChild('TaskMarker');
+	if (task) {
+		out.push(hiddenMarkup.range(mark.from, task.from));
+		return;
+	}
+	let depth = 0;
+	for (let node = item.parent.parent; node; node = node.parent) {
+		if (node.name === 'BulletList') depth++;
+	}
+	out.push(Decoration.replace({ widget: new BulletWidget(depth) }).range(mark.from, mark.to));
 }
 
 function addLink(state: EditorState, node: SyntaxNode, out: Range<Decoration>[]) {
@@ -115,7 +159,8 @@ export function buildInlineDecorations(
 					return false;
 				}
 
-				if (name === 'Link') addLink(state, ref.node, out);
+				if (name === 'ListMark') addListMark(state, ref.node, out);
+				else if (name === 'Link') addLink(state, ref.node, out);
 			}
 		});
 	}
@@ -184,10 +229,25 @@ const inlineTheme = EditorView.baseTheme({
 		textDecoration: 'underline',
 		textUnderlineOffset: '0.15em',
 		cursor: 'pointer'
-	}
+	},
+	'.cm-md-list-indent': { fontFamily: 'var(--md-font-mono)' },
+	'.cm-md-bullet': {
+		display: 'inline-block',
+		width: '0.4em',
+		height: '0.4em',
+		margin: '0 0.1em',
+		borderRadius: '50%',
+		boxSizing: 'border-box',
+		verticalAlign: 'middle'
+	},
+	'.cm-md-bullet-filled': { backgroundColor: 'currentColor' },
+	'.cm-md-bullet-hollow': { border: '1.5px solid currentColor' }
 });
 
-/** Hides inline Markdown syntax (headings, emphasis, code, links) away from the cursor. */
+/**
+ * Hides inline Markdown syntax (headings, emphasis, code, links) away from the cursor,
+ * and draws bullet list markers as dots.
+ */
 export function inlineLivePreview(): Extension {
 	return [inlinePlugin, linkClickHandler, inlineTheme];
 }

@@ -213,8 +213,8 @@ describe('review regressions', () => {
 	it('keeps the list bullet visible next to a code block', async () => {
 		await render(MarkdownEditor, { value: 'intro\n\n- ```js\n  code\n  ```\n\nend' });
 		await expect.element(page.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
-		const lines = [...document.querySelectorAll('.cm-line')].map((l) => l.textContent);
-		expect(lines).toContain('- ');
+		const bullet = document.querySelector('.cm-md-bullet');
+		expect(bullet?.closest('.cm-line')?.textContent).toBe(' ');
 	});
 });
 

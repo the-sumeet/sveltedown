@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { EditorSelection, EditorState } from '@codemirror/state';
 import { ensureSyntaxTree } from '@codemirror/language';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { buildInlineDecorations, hiddenMarkup } from './inline-live-preview.js';
+import { BulletWidget, buildInlineDecorations, hiddenMarkup } from './inline-live-preview.js';
 import { focusTracking, isCursorInRange, setEditorFocused } from '../utils/cursor.js';
 import { EditorView } from '@codemirror/view';
 
@@ -171,5 +171,57 @@ describe('review regressions', () => {
 		expect(hiddenCount(unfocused)).toBe(2);
 		expect(hiddenCount(unfocused.update({ effects: setEditorFocused.of(true) }).state)).toBe(0);
 		expect(hiddenCount(make(false).update({ effects: setEditorFocused.of(true) }).state)).toBe(2);
+	});
+
+	describe('lists', () => {
+		function listDecorations(doc: string, cursor: number) {
+			const bullets: { at: number; depth: number }[] = [];
+			const hidden: string[] = [];
+			const indents: string[] = [];
+			buildInlineDecorations(stateWith(doc, cursor), [{ from: 0, to: doc.length }]).between(
+				0,
+				doc.length,
+				(from, to, value) => {
+					if (value.spec.widget instanceof BulletWidget)
+						bullets.push({ at: from, depth: value.spec.widget.depth });
+					else if (value === hiddenMarkup) hidden.push(doc.slice(from, to));
+					else if (value.spec.class === 'cm-md-list-indent') indents.push(doc.slice(from, to));
+				}
+			);
+			return { bullets, hidden, indents };
+		}
+
+		it('draws bullets with their nesting depth', () => {
+			const doc = '- a\n  - b\n    * c\n\nend';
+			expect(listDecorations(doc, doc.length).bullets).toEqual([
+				{ at: 0, depth: 0 },
+				{ at: 6, depth: 1 },
+				{ at: 14, depth: 2 }
+			]);
+		});
+
+		it('shows the raw marker when the cursor touches it', () => {
+			const doc = '- a\n- b';
+			expect(listDecorations(doc, 4).bullets).toEqual([{ at: 0, depth: 0 }]);
+		});
+
+		it('leaves ordered markers as they are', () => {
+			const doc = '1. a\n2. b\n\nend';
+			const d = listDecorations(doc, doc.length);
+			expect(d.bullets).toEqual([]);
+			expect(d.hidden).toEqual([]);
+		});
+
+		it('hides the marker of a task item', () => {
+			const doc = '- [ ] todo\n\nend';
+			const d = listDecorations(doc, doc.length);
+			expect(d.bullets).toEqual([]);
+			expect(d.hidden).toEqual(['- ']);
+		});
+
+		it('marks the indentation of nested items', () => {
+			const doc = '1. a\n   - b\n\nend';
+			expect(listDecorations(doc, doc.length).indents).toEqual(['   ']);
+		});
 	});
 });

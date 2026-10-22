@@ -8,6 +8,13 @@ Select a word and press \`Mod-b\` for **bold**, \`Mod-i\` for *italic* or \`Mod-
 
 ### Nested **bold *and italic*** in a heading
 
+## Lists
+
+- Bullets render as dots
+  - Nested ones as rings
+    - Then dots again
+- Press Tab on an item to nest it, Shift-Tab to move it back out
+
 ## Tasks
 
 - [x] Inline live preview

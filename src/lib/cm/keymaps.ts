@@ -4,6 +4,7 @@ import { defaultKeymap, historyKeymap } from '@codemirror/commands';
 import type { SyntaxNode } from '@lezer/common';
 import { findNodeAt } from './utils/syntax.js';
 import { formatTable } from './utils/tables.js';
+import { indentListItem, outdentListItem } from './utils/lists.js';
 
 const WRAP_NODES: Record<string, { node: string; mark: string }> = {
 	'**': { node: 'StrongEmphasis', mark: 'EmphasisMark' },
@@ -100,13 +101,16 @@ export const formattingKeymap = [
 	{ key: 'Mod-Shift-x', run: toggleStrikethrough, preventDefault: true },
 	{ key: 'Mod-k', run: insertLink, preventDefault: true },
 	// No preventDefault: outside a table the browser keeps the shortcut.
-	{ key: 'Mod-Shift-f', run: formatTable }
+	{ key: 'Mod-Shift-f', run: formatTable },
+	// Likewise outside a list, so Tab still moves focus out of the editor.
+	{ key: 'Tab', run: indentListItem },
+	{ key: 'Shift-Tab', run: outdentListItem }
 ];
 
 /**
  * Formatting shortcuts (taking precedence over defaults such as `Mod-i`, "select parent
  * syntax"), plus the default and history keymaps. List continuation on Enter comes from
- * `@codemirror/lang-markdown`'s own keymap.
+ * `@codemirror/lang-markdown`'s own keymap; Tab and Shift-Tab nest list items.
  */
 export function editorKeymaps(): Extension {
 	return [Prec.high(keymap.of(formattingKeymap)), keymap.of([...defaultKeymap, ...historyKeymap])];

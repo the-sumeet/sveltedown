@@ -23,6 +23,10 @@ The toggles read the Markdown structure: inside (or right next to) `**bold**`, `
 |---|---|
 | `Enter` | Continue the current list, numbered list or task list |
 | `Backspace` | At the start of an empty item, remove its marker |
+| `Tab` | Nest the item (and its children) under the previous item |
+| `Shift-Tab` | Move the item (and its children) out one level |
+
+Outside a list, `Tab` and `Shift-Tab` keep their browser behavior and move focus out of the editor.
 
 ## Navigation in code blocks and tables
 
