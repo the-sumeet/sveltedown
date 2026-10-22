@@ -13,7 +13,7 @@ description: Every export of the sveltedown package.
 
 | Import | |
 |---|---|
-| `sveltedown/editor.css` | Default `--md-*` variables. Imported by `MarkdownEditor`; import it yourself when using the extensions directly. |
+| `@the-sumeet/sveltedown/editor.css` | Default `--md-*` variables. Imported by `MarkdownEditor`; import it yourself when using the extensions directly. |
 
 ## Extensions
 

@@ -16,7 +16,7 @@ The document stays plain Markdown text. Syntax such as `**`, `#` and `[text](url
 ## Install
 
 ```sh
-npm install sveltedown
+npm install @the-sumeet/sveltedown
 ```
 
 `svelte@^5` is a peer dependency.
@@ -25,7 +25,7 @@ npm install sveltedown
 
 ```svelte
 <script lang="ts">
-	import { MarkdownEditor } from 'sveltedown';
+	import { MarkdownEditor } from '@the-sumeet/sveltedown';
 
 	let value = $state('# Hello\n\nStart **writing**…');
 </script>
@@ -58,3 +58,7 @@ npm run docs:dev     # docs site (run `npm install` in docs/ first)
 npm run docs:build
 npm run docs:check
 ```
+
+## License
+
+[MIT](LICENSE)

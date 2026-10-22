@@ -52,8 +52,8 @@ export default defineConfig({
 		resolve: {
 			// Demos use the library's source, so they update while it is being developed.
 			alias: [
-				{ find: /^sveltedown\/editor\.css$/, replacement: lib('styles/editor.css') },
-				{ find: /^sveltedown$/, replacement: lib('index.ts') }
+				{ find: /^@the-sumeet\/sveltedown\/editor\.css$/, replacement: lib('styles/editor.css') },
+				{ find: /^@the-sumeet\/sveltedown$/, replacement: lib('index.ts') }
 			],
 			// The library source sits outside this project and would otherwise resolve
 			// the root project's copy of Svelte: two runtimes break mounting and reactivity.

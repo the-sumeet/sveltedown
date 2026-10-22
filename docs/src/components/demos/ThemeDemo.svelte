@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MarkdownEditor } from 'sveltedown';
+	import { MarkdownEditor } from '@the-sumeet/sveltedown';
 
 	const fonts = {
 		Docs: 'var(--sl-font)',

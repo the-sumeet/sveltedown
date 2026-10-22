@@ -11,7 +11,7 @@ The `extensions` prop takes any CodeMirror extensions. They are added after the 
 
 ```svelte
 <script lang="ts">
-	import { MarkdownEditor } from 'sveltedown';
+	import { MarkdownEditor } from '@the-sumeet/sveltedown';
 	import { EditorView, keymap } from '@codemirror/view';
 
 	const extensions = [
@@ -41,8 +41,8 @@ Import from `@codemirror/*` packages at the versions sveltedown uses, so there i
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { inlineLivePreview, blockWidgets, markdownTheme, focusTracking } from 'sveltedown';
-import 'sveltedown/editor.css';
+import { inlineLivePreview, blockWidgets, markdownTheme, focusTracking } from '@the-sumeet/sveltedown';
+import '@the-sumeet/sveltedown/editor.css';
 
 const view = new EditorView({
 	parent: document.querySelector('#editor')!,
@@ -83,7 +83,7 @@ Use these in your own keymaps or toolbar buttons. Each one takes `{ state, dispa
 
 ```ts
 import { Decoration } from '@codemirror/view';
-import { SvelteWidget } from 'sveltedown';
+import { SvelteWidget } from '@the-sumeet/sveltedown';
 import Mention from './Mention.svelte';
 
 const widget = new SvelteWidget(Mention, { user: 'ada' }, { class: 'mention' });

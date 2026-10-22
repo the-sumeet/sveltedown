@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { MarkdownEditor } from 'sveltedown';
-	import type { CodeHeaderSnippetProps, ImageSnippetProps, TableSnippetProps } from 'sveltedown';
+	import { MarkdownEditor } from '@the-sumeet/sveltedown';
+	import type { CodeHeaderSnippetProps, ImageSnippetProps, TableSnippetProps } from '@the-sumeet/sveltedown';
 
 	let { kind }: { kind: 'image' | 'code' | 'table' } = $props();
 
