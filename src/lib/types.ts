@@ -35,6 +35,12 @@ export interface MarkdownEditorProps {
 	class?: string;
 	/** Called with the new Markdown whenever the user edits the document. */
 	onchange?: (value: string) => void;
+	/**
+	 * Called with a link's destination when the user follows it (Mod-click, or a plain click
+	 * when read-only). Return `true` once handled; otherwise http, https and mailto links
+	 * open in a new tab.
+	 */
+	onlinkclick?: (url: string, event: MouseEvent) => boolean | void;
 	/** Replaces the default image preview widget. */
 	imageSnippet?: Snippet<[ImageSnippetProps]>;
 	/** Replaces the default fenced code block header widget. */

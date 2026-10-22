@@ -3,7 +3,7 @@
 	import type { TableCellData, TableData } from '../../cm/utils/tables.js';
 	import { findNodeAt } from '../../cm/utils/syntax.js';
 	import { caretAt, onScrollbar, textOffset } from '../../cm/utils/dom.js';
-	import { openLink } from '../../cm/utils/links.js';
+	import { followLink } from '../../cm/utils/links.js';
 
 	let { table, view }: { table: TableData; view: EditorView } = $props();
 
@@ -36,7 +36,7 @@
 		const link = (event.target as Element).closest<HTMLElement>('[data-url]');
 		if (link && (event.metaKey || event.ctrlKey || !editable)) {
 			event.preventDefault();
-			openLink(link.dataset.url!);
+			followLink(view, link.dataset.url!, event);
 			return;
 		}
 		if (!editable || !window.getSelection()?.isCollapsed || onScrollbar(scroller, event)) return;

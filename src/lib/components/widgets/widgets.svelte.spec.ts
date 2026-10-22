@@ -200,6 +200,16 @@ describe('tables', () => {
 		await render(MarkdownEditor, { value: doc, tableSnippet });
 		await expect.element(page.getByText('2 columns')).toBeInTheDocument();
 	});
+
+	it('passes links followed in a cell to onlinkclick', async () => {
+		const open = vi.spyOn(window, 'open').mockReturnValue(null);
+		const onlinkclick = vi.fn(() => true);
+		await render(MarkdownEditor, { value: doc, readonly: true, onlinkclick });
+		await page.getByText('pear').click();
+		expect(onlinkclick).toHaveBeenCalledWith('https://x.dev', expect.any(MouseEvent));
+		expect(open).not.toHaveBeenCalled();
+		open.mockRestore();
+	});
 });
 
 describe('review regressions', () => {

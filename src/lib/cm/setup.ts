@@ -13,6 +13,7 @@ import { blockWidgets, widgetSnippets, type WidgetSnippets } from './plugins/blo
 import { editorKeymaps } from './keymaps.js';
 import { markdownTheme } from './theme.js';
 import { focusTracking } from './utils/cursor.js';
+import { linkHandler, type LinkHandler } from './utils/links.js';
 
 /** Marks transactions that sync the document from the `value` prop, so they are not echoed back. */
 export const externalSync = Annotation.define<boolean>();
@@ -26,6 +27,8 @@ export interface EditorOptions {
 	snippets?: WidgetSnippets;
 	/** Called after user edits (not after `setDoc`). */
 	onDocChange: (doc: string) => void;
+	/** Called when the user follows a link; return `true` to skip opening it in a new tab. */
+	onLinkClick?: LinkHandler;
 }
 
 export interface EditorController {
@@ -104,6 +107,7 @@ export function createEditor(options: EditorOptions): EditorController {
 				readonlyConf.of(readonlyExtension(readonly)),
 				placeholderConf.of(placeholderFor(placeholder)),
 				snippetsConf.of(widgetSnippets.of(snippets)),
+				options.onLinkClick ? linkHandler.of(options.onLinkClick) : [],
 				EditorView.updateListener.of((update) => {
 					if (!update.docChanged) return;
 					if (update.transactions.some((tr) => tr.annotation(externalSync))) return;

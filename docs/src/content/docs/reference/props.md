@@ -14,6 +14,7 @@ description: Everything MarkdownEditor accepts.
 | `readonly` | `boolean` | `false` | Disables editing. Everything stays rendered; links open with a plain click. |
 | `class` | `string` | `''` | Extra class on the editor element; useful for per-instance [theming](../../guides/theming/). |
 | `onchange` | `(value: string) => void` | | Called after each edit made in the editor. Not called when `value` is set from outside. |
+| `onlinkclick` | `(url: string, event: MouseEvent) => boolean \| void` | | Called with the destination of a link the user follows, in text or in a table. Return `true` once handled; otherwise it opens as usual. See [Links](../../guides/live-preview/#links). |
 | `imageSnippet` | `Snippet<[ImageSnippetProps]>` | | Replaces the image preview. See [Custom snippets](../../guides/custom-snippets/#images). |
 | `codeHeaderSnippet` | `Snippet<[CodeHeaderSnippetProps]>` | | Replaces the code block header. See [Custom snippets](../../guides/custom-snippets/#code-block-header). |
 | `tableSnippet` | `Snippet<[TableSnippetProps]>` | | Replaces the rendered table. See [Custom snippets](../../guides/custom-snippets/#tables). |

@@ -27,6 +27,7 @@ description: Every export of the sveltedown package.
 | `formattingKeymap` | Just the formatting key bindings. |
 | `focusTracking()` | Reveal syntax only while the editor has focus. |
 | `widgetSnippets` | Facet holding `{ image, codeHeader, table }` snippets for `blockWidgets()`. |
+| `linkHandler` | Facet of `LinkHandler`s tried, in order, when the user follows a link. One that returns `true` stops the default. |
 
 ## Commands
 
@@ -50,7 +51,9 @@ description: Every export of the sveltedown package.
 | `isRevealed(state, from, to)` | Whether a range's syntax should show: cursor, focus and editability. |
 | `setEditorFocused` | State effect recording a focus change, as dispatched by `focusTracking()`. |
 | `externalSync` | Annotation on transactions that sync the document from the `value` prop. |
+| `followLink(view, url, event)` | Follow a link as a click does: the `linkHandler`s, then `openLink`. |
+| `openLink(url)` | Open an `http`, `https` or `mailto` URL in a new tab; anything else is ignored. |
 
 ## Types
 
-`MarkdownEditorProps`, `ImageSnippetProps`, `CodeHeaderSnippetProps`, `TableSnippetProps`, `TableData`, `TableCellData`, `TableSegment`, `TableAlign`, `EditorController`, `EditorOptions`, `WidgetSnippets`, `SvelteWidgetOptions`.
+`MarkdownEditorProps`, `ImageSnippetProps`, `CodeHeaderSnippetProps`, `TableSnippetProps`, `TableData`, `TableCellData`, `TableSegment`, `TableAlign`, `EditorController`, `EditorOptions`, `WidgetSnippets`, `SvelteWidgetOptions`, `LinkHandler`.

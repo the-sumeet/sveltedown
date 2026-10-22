@@ -133,4 +133,41 @@ describe('MarkdownEditor', () => {
 		await render(MarkdownEditor, { value: 'x', readonly: true });
 		await expect.element(content()).toHaveAttribute('contenteditable', 'false');
 	});
+
+	describe('onlinkclick', () => {
+		it('receives followed links and can stop them opening', async () => {
+			const open = vi.spyOn(window, 'open').mockReturnValue(null);
+			const onlinkclick = vi.fn(() => true);
+			await render(MarkdownEditor, {
+				value: 'see [notes](<../a b.md>) x',
+				readonly: true,
+				onlinkclick
+			});
+			await userEvent.click(page.getByText('notes'));
+			expect(onlinkclick).toHaveBeenCalledWith('../a b.md', expect.any(MouseEvent));
+			expect(open).not.toHaveBeenCalled();
+			open.mockRestore();
+		});
+
+		it('opens the link as usual when not handled', async () => {
+			const open = vi.spyOn(window, 'open').mockReturnValue(null);
+			const onlinkclick = vi.fn();
+			await render(MarkdownEditor, {
+				value: 'see [docs](https://x.dev) x',
+				readonly: true,
+				onlinkclick
+			});
+			await userEvent.click(page.getByText('docs'));
+			expect(onlinkclick).toHaveBeenCalledWith('https://x.dev', expect.any(MouseEvent));
+			expect(open).toHaveBeenCalledWith('https://x.dev/', '_blank', 'noopener');
+			open.mockRestore();
+		});
+
+		it('does not run for a plain click in an editable editor', async () => {
+			const onlinkclick = vi.fn();
+			await render(MarkdownEditor, { value: 'see [docs](https://x.dev) x', onlinkclick });
+			await userEvent.click(page.getByText('docs'));
+			expect(onlinkclick).not.toHaveBeenCalled();
+		});
+	});
 });

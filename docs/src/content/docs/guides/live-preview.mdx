@@ -41,6 +41,21 @@ A plain click places the cursor in the link, which reveals its source for editin
 
 Only `http`, `https` and `mailto` links open, so a `javascript:` URL in a document can't run. Angle-bracket destinations (`[a](<my page.html>)`) and backslash escapes are decoded.
 
+To handle links yourself, for example to open relative links to other notes in your app, pass `onlinkclick`. It gets the decoded destination of every followed link, in text and in tables. Return `true` once you've handled it; otherwise the link opens as above.
+
+```svelte
+<MarkdownEditor
+	bind:value
+	onlinkclick={(url) => {
+		if (/^[a-z][a-z\d+.-]*:/i.test(url)) return; // has a scheme: open as usual
+		openNote(url);
+		return true;
+	}}
+/>
+```
+
+Outside the component, add handlers with the `linkHandler` facet: `linkHandler.of((url, event) => …)`.
+
 ## Images
 
 `![alt](src "title")` renders the image. Clicking it moves the cursor into its source so you can edit the URL or alt text. If the image fails to load, a placeholder shows the alt text. You can [render images yourself](../custom-snippets/) with `imageSnippet`.

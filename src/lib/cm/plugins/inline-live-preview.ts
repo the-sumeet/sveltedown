@@ -11,7 +11,7 @@ import {
 import type { SyntaxNode } from '@lezer/common';
 import { isRevealed, revealInputsChanged } from '../utils/cursor.js';
 import { linkDestination } from '../utils/syntax.js';
-import { openLink } from '../utils/links.js';
+import { followLink } from '../utils/links.js';
 
 /** Replacement that hides a piece of Markdown syntax. */
 export const hiddenMarkup = Decoration.replace({});
@@ -200,7 +200,7 @@ const linkClickHandler = EditorView.domEventHandlers({
 		if (!url || event.button !== 0) return false;
 		if (!(event.metaKey || event.ctrlKey || !view.state.facet(EditorView.editable))) return false;
 		event.preventDefault();
-		openLink(url);
+		followLink(view, url, event);
 		return true;
 	}
 });

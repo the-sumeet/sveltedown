@@ -10,6 +10,7 @@
 		readonly = false,
 		class: className = '',
 		onchange,
+		onlinkclick,
 		imageSnippet,
 		codeHeaderSnippet,
 		tableSnippet,
@@ -38,7 +39,9 @@
 				// After this, `value` equals the doc, so the sync effect below is a no-op.
 				value = doc;
 				onchange?.(doc);
-			}
+			},
+			// Reads the current prop on each click, so it can change after mount.
+			onLinkClick: (url, event) => onlinkclick?.(url, event)
 		});
 		editor = instance;
 		return () => {
