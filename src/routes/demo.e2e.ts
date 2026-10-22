@@ -92,6 +92,11 @@ test('switches theme and read-only mode', async ({ page }) => {
 
 test('renders a table and formats its source', async ({ page }) => {
 	const table = page.locator('.cm-md-table table');
+	// CodeMirror only renders lines near the viewport; scroll down until the table is drawn.
+	await expect(async () => {
+		await page.evaluate(() => window.scrollBy(0, 300));
+		await expect(table).toBeAttached({ timeout: 200 });
+	}).toPass();
 	await expect(table.locator('th')).toHaveText(['Feature', 'Status', 'Shortcut']);
 
 	await table.locator('td', { hasText: 'try it' }).click();
