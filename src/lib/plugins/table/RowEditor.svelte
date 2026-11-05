@@ -20,12 +20,16 @@
 	const editorRootElementRef = useCellValue(editorRootElementRef$);
 	const t = useTranslation();
 
+	// Radix closed the menu when focus moved into a cell. Close it after actions instead.
+	let open = $state(false);
+
 	function insertRowAt(index: number) {
 		changeTable(
 			parentEditor,
 			tableKey,
 			(table) => {
 				table.insertRowAt(index);
+				open = false;
 			},
 			() => {
 				setActiveCell([0, index]);
@@ -34,7 +38,7 @@
 	}
 </script>
 
-<Popover.Root>
+<Popover.Root bind:open>
 	<Popover.Trigger
 		class="sd-table-column-editor-trigger"
 		data-active={highlightedCoordinates[1] === rowIndex}
@@ -66,6 +70,7 @@
 					onclick={() =>
 						changeTable(parentEditor, tableKey, (table) => {
 							table.deleteRowAt(rowIndex);
+							open = false;
 						})}
 					title={t('table.deleteRow', 'Delete this row')}
 				>

@@ -179,6 +179,8 @@ export class TableNode extends DecoratorNode<SvelteDecorator> {
 			cellsClone.splice(colIndex, 1);
 			table.children[rowIndex] = rowClone;
 		}
+		// Without this, the column comes back as an empty one in the markdown.
+		table.align?.splice(colIndex, 1);
 	}
 
 	insertRowAt(y: number): void {

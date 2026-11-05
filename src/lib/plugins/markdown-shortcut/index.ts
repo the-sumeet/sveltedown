@@ -119,6 +119,11 @@ const THEMATIC_BREAK: ElementTransformer = {
 	type: 'element'
 };
 
+// Lexical's fence pattern has captured the fence itself before the language since 0.50.
+function fenceLanguage(match: string[]): string {
+	return match.slice(1).find((group) => group && !/^[`~]+$/.test(group)) ?? '';
+}
+
 const LIST_TRANSFORMERS: ReadonlySet<Transformer> = new Set([
 	ORDERED_LIST,
 	UNORDERED_LIST,
@@ -187,7 +192,7 @@ function pickTransformersForActivePlugins(
 			replace: (parentNode, _children, match) => {
 				const codeBlockNode = $createCodeBlockNode({
 					code: '',
-					language: match[1] ?? '',
+					language: fenceLanguage(match),
 					meta: ''
 				});
 				// this is necessary for lexical to not complain about lost selection. The selection is really lost, but it will get restored in the setTimeout below

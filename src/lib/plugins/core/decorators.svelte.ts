@@ -12,12 +12,48 @@ export interface SvelteDecorator {
 	props: Record<string, unknown>;
 }
 
-/** The reactive state of one mounted decorator. Raw, so that nodes and mdast aren't proxied. */
+/** One prop. Raw, so that nodes and mdast aren't proxied. */
+class PropCell {
+	value = $state.raw<unknown>();
+
+	constructor(value: unknown) {
+		this.value = value;
+	}
+}
+
+/**
+ * The reactive state of one mounted decorator. `decorate()` returns a new props object on every
+ * change of the node. Tracking each prop separately keeps an edit to one prop, like the code of
+ * a code block, from rerunning everything that reads the others.
+ */
 export class DecoratorState {
-	decorator = $state.raw() as SvelteDecorator;
+	component = $state.raw() as SvelteDecorator['component'];
+	/** Getters for the current props, for spreading into the component. */
+	readonly props: Record<string, unknown> = {};
+	#cells = new Map<string, PropCell>();
 
 	constructor(decorator: SvelteDecorator) {
-		this.decorator = decorator;
+		this.update(decorator);
+	}
+
+	update(decorator: SvelteDecorator) {
+		this.component = decorator.component;
+		for (const [key, value] of Object.entries(decorator.props)) {
+			const cell = this.#cells.get(key);
+			if (cell) {
+				cell.value = value;
+				continue;
+			}
+			const created = new PropCell(value);
+			this.#cells.set(key, created);
+			Object.defineProperty(this.props, key, {
+				enumerable: true,
+				get: () => created.value
+			});
+		}
+		for (const [key, cell] of this.#cells) {
+			if (!(key in decorator.props)) cell.value = undefined;
+		}
 	}
 }
 
@@ -58,7 +94,7 @@ export function registerSvelteDecorators(
 
 			const current = mounted.get(key);
 			if (current) {
-				current.state.decorator = decorator;
+				current.state.update(decorator);
 				continue;
 			}
 			const state = new DecoratorState(decorator);

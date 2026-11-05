@@ -551,6 +551,17 @@ export function Appender<T>(
 	});
 }
 
+function isFocusInDecorator(editor: LexicalEditor): boolean {
+	const active = typeof document === 'undefined' ? null : document.activeElement;
+	const root = editor.getRootElement();
+	return (
+		active !== null &&
+		root !== null &&
+		root.contains(active) &&
+		active.closest('[data-lexical-decorator="true"]') !== null
+	);
+}
+
 function handleSelectionChange(r: Realm) {
 	const selection = $getSelection();
 	if ($isRangeSelection(selection)) {
@@ -580,6 +591,11 @@ export const createRootEditorSubscription$ = Appender(rootEditorSubscriptions$, 
 			return rootEditor.registerCommand(
 				SELECTION_CHANGE_COMMAND,
 				(_, theActiveEditor) => {
+					// The root editor can report its own selection change after focus moved into a
+					// decorator, such as a nested editor or a code block. That one stays active.
+					if (theActiveEditor._parentEditor === null && isFocusInDecorator(theActiveEditor)) {
+						return false;
+					}
 					r.pubIn({
 						[activeEditor$]: theActiveEditor,
 						[inFocus$]: true

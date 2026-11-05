@@ -29,7 +29,12 @@
 
 <BitsSelect.Root
 	type="single"
-	bind:value={() => value || '', (next) => onChange(next as T)}
+	bind:value={
+		() => value || '',
+		(next) => {
+			if (next !== (value || '')) onChange(next as T);
+		}
+	}
 	{disabled}
 >
 	<TooltipWrap title={triggerTitle}>
