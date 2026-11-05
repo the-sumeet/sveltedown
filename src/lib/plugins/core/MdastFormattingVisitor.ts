@@ -1,5 +1,5 @@
 import type * as Mdast from 'mdast';
-import { type MdxJsxTextElement } from 'mdast-util-mdx';
+import type { MdxJsxTextElement } from 'mdast-util-mdx';
 import {
 	type FORMAT,
 	IS_BOLD,
@@ -11,7 +11,7 @@ import {
 	IS_SUPERSCRIPT,
 	IS_UNDERLINE
 } from '../../FormatConstants.js';
-import { type MdastImportVisitor } from '../../importMarkdownToLexical.js';
+import type { MdastImportVisitor } from '../../importMarkdownToLexical.js';
 import { $createTextNode } from 'lexical';
 
 function buildFormattingVisitors(

@@ -97,6 +97,12 @@
 	color-scheme: dark;
 }
 
+/* The browser's default <mark> colours don't follow the theme. */
+:where(.sd-content-editable, .sd-nested-editor) mark {
+	background-color: light-dark(#ffe066, #6b5600);
+	color: inherit;
+}
+
 /* Colours follow the theme, which can differ from the host page, so the editor paints its own surface. */
 :where(.sd-editor-wrapper) {
 	background-color: var(--basePageBg);

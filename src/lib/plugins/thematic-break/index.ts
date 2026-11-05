@@ -1,0 +1,43 @@
+import { realmPlugin } from '../../realmPlugin.js';
+import {
+	HorizontalRuleExtension,
+	HorizontalRuleNode,
+	INSERT_HORIZONTAL_RULE_COMMAND
+} from '@lexical/extension';
+import { Action, withLatestFrom } from '../../realm/index.js';
+import {
+	activeEditor$,
+	addActivePlugin$,
+	addLexicalExtension$,
+	addExportVisitor$,
+	addImportVisitor$,
+	addLexicalNode$
+} from '../core/index.js';
+import { LexicalThematicBreakVisitor } from './LexicalThematicBreakVisitor.js';
+import { MdastThematicBreakVisitor } from './MdastThematicBreakVisitor.js';
+
+/**
+ * Inserts a thematic break at the current selection.
+ * @group Thematic Break
+ */
+export const insertThematicBreak$ = Action((r) => {
+	r.sub(r.pipe(insertThematicBreak$, withLatestFrom(activeEditor$)), ([, theEditor]) => {
+		theEditor?.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
+	});
+});
+
+/**
+ * A plugin that adds support for thematic breaks.
+ * @group Thematic Break
+ */
+export const thematicBreakPlugin = realmPlugin({
+	init(realm) {
+		realm.pubIn({
+			[addActivePlugin$]: 'thematicBreak',
+			[addImportVisitor$]: MdastThematicBreakVisitor,
+			[addLexicalNode$]: HorizontalRuleNode,
+			[addExportVisitor$]: LexicalThematicBreakVisitor,
+			[addLexicalExtension$]: HorizontalRuleExtension
+		});
+	}
+});

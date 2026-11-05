@@ -30,6 +30,8 @@ import {
 	jsxComponentDescriptors$,
 	jsxIsAvailable$,
 	lexicalTheme$,
+	lexicalExtensions$,
+	nestedEditorRegistrations$,
 	rootEditor$,
 	usedLexicalNodes$
 } from './index.js';
@@ -63,6 +65,7 @@ export function createNestedEditor<T extends Mdast.RootContent>({
 		theme: realm.getValue(lexicalTheme$),
 		namespace: 'NestedEditor',
 		parentEditor: context.parentEditor,
+		extensions: realm.getValue(lexicalExtensions$),
 		historyMode: historyMode ? 'nested-shared' : 'nested-external',
 		historyState: realm.getValue(historyState$),
 		initialEditorState: () => {
@@ -129,14 +132,8 @@ export function registerNestedEditor<T extends Mdast.RootContent>(
 		});
 	}
 
-	context.focusEmitter.subscribe(() => {
-		editor.focus();
-	});
-
 	return mergeRegister(
-		() => {
-			context.focusEmitter.subscribe(() => undefined);
-		},
+		...realm.getValue(nestedEditorRegistrations$).map((register) => register(editor, realm)),
 		editor.registerCommand(
 			FOCUS_COMMAND,
 			() => {

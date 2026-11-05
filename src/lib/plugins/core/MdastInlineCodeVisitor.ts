@@ -1,7 +1,7 @@
 import { $createTextNode } from 'lexical';
 import type * as Mdast from 'mdast';
 import { IS_CODE } from '../../FormatConstants.js';
-import { type MdastImportVisitor } from '../../importMarkdownToLexical.js';
+import type { MdastImportVisitor } from '../../importMarkdownToLexical.js';
 
 interface OpeningHTMLCodeNode extends Mdast.Html {
 	type: 'html';

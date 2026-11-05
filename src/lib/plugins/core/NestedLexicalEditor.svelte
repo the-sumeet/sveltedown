@@ -4,11 +4,11 @@
 	directives or JSX elements. Render it inside `NestedEditorsProvider`.
 -->
 <script lang="ts" generics="T extends Mdast.RootContent">
-	import { getAllContexts, onMount } from 'svelte';
-	import type { LexicalEditorWithDispose } from 'lexical';
+	import { getAllContexts, onMount, untrack } from 'svelte';
 	import type * as Mdast from 'mdast';
 	import { useCellValue, useRealm } from '../../realm/hooks.js';
 	import { attachEditorSurface } from './editorSurface.js';
+	import { setLexicalEditorContext } from './hooks.js';
 	import { nestedEditorChildren$ } from './index.js';
 	import { createNestedEditor, registerNestedEditor } from './nestedEditor.js';
 	import {
@@ -37,41 +37,48 @@
 	const context = useNestedEditorContext<T>();
 	const updateMdastNode = useMdastNodeUpdater<T>();
 	const removeNode = useLexicalNodeRemove();
-	const contexts = getAllContexts();
 	const children = useCellValue(nestedEditorChildren$);
 
+	// The editor keeps the configuration it was mounted with.
+	const options = {
+		realm,
+		context,
+		block: untrack(() => block),
+		getContent: (node: T) => getContent(node),
+		getUpdatedMdastNode: (node: T, content: Mdast.RootContent[]) =>
+			getUpdatedMdastNode(node, content),
+		updateMdastNode,
+		removeNode
+	};
+	const editor = untrack(() => createNestedEditor(options));
+	setLexicalEditorContext(editor);
+	const contexts = getAllContexts();
+
 	let element: HTMLDivElement;
-	let editor = $state.raw<LexicalEditorWithDispose | null>(null);
+
+	$effect(() => {
+		const emitter = context.focusEmitter;
+		emitter.subscribe(() => {
+			editor.focus();
+		});
+		return () => {
+			emitter.subscribe(() => undefined);
+		};
+	});
 
 	onMount(() => {
-		// The editor keeps the configuration it was mounted with.
-		const options = {
-			realm,
-			context,
-			block,
-			getContent: (node: T) => getContent(node),
-			getUpdatedMdastNode: (node: T, content: Mdast.RootContent[]) =>
-				getUpdatedMdastNode(node, content),
-			updateMdastNode,
-			removeNode
-		};
-		const nested = createNestedEditor(options);
-		const unregister = registerNestedEditor(nested, options);
-		const detach = attachEditorSurface(nested, element, contexts);
-		editor = nested;
+		const unregister = registerNestedEditor(editor, options);
+		const detach = attachEditorSurface(editor, element, contexts);
 
 		return () => {
-			editor = null;
 			unregister();
 			detach();
-			nested.dispose();
+			editor.dispose();
 		};
 	});
 </script>
 
 <div bind:this={element} class={['sd-nested-editor', contentEditableClass]}></div>
-{#if editor}
-	{#each children.current as Child, index (index)}
-		<Child />
-	{/each}
-{/if}
+{#each children.current as Child, index (index)}
+	<Child />
+{/each}

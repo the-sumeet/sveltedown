@@ -1,5 +1,5 @@
 import type { MdxJsxAttribute } from 'mdast-util-mdx';
-import { type MdastImportVisitor } from '../../importMarkdownToLexical.js';
+import type { MdastImportVisitor } from '../../importMarkdownToLexical.js';
 import { $createGenericHTMLNode } from './GenericHTMLNode.js';
 import { isMdastHTMLNode, type MdastHTMLNode } from './MdastHTMLNode.js';
 

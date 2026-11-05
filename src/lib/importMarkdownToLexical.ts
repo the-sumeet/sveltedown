@@ -1,12 +1,12 @@
-import { type ElementNode, type LexicalNode } from 'lexical';
+import type { ElementNode, LexicalNode } from 'lexical';
 import type * as Mdast from 'mdast';
 import { fromMarkdown, type Extension as FromMarkdownExtension } from 'mdast-util-from-markdown';
 import { toMarkdown } from 'mdast-util-to-markdown';
-import { type ParseOptions } from 'micromark-util-types';
-import { type FORMAT } from './FormatConstants.js';
-import { type CodeBlockEditorDescriptor } from './plugins/codeblock/index.js';
-import { type DirectiveDescriptor } from './plugins/directives/index.js';
-import { type JsxComponentDescriptor } from './plugins/jsx/index.js';
+import type { ParseOptions } from 'micromark-util-types';
+import type { FORMAT } from './FormatConstants.js';
+import type { CodeBlockEditorDescriptor } from './plugins/codeblock/index.js';
+import type { DirectiveDescriptor } from './plugins/directives/index.js';
+import type { JsxComponentDescriptor } from './plugins/jsx/index.js';
 import {
 	type JsxKindMismatchPolicy,
 	reconcileJsxKindMismatches

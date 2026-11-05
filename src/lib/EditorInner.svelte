@@ -1,13 +1,14 @@
 <!-- The client-only part of the editor, rendered once the realm exists. -->
 <script lang="ts">
-	import { getAllContexts, onMount, type Snippet } from 'svelte';
+	import { getAllContexts, onMount, untrack, type Snippet } from 'svelte';
 	import { setRealmContext, useCellValue } from './realm/hooks.js';
 	import type { Realm } from './realm/index.js';
 	import { attachEditorSurface, registerPlaceholder } from './plugins/core/editorSurface.js';
-	import { useTranslation } from './plugins/core/hooks.js';
+	import { setLexicalEditorContext, useTranslation } from './plugins/core/hooks.js';
 	import {
 		bottomAreaChildren$,
 		composerChildren$,
+		composerRegistrations$,
 		contentEditableClassName$,
 		contentEditableRef$,
 		contentEditableWrapperElement$,
@@ -31,8 +32,10 @@
 	let { realm, wrapper, className, overlayContainer }: Props = $props();
 
 	// The realm doesn't change for the lifetime of this component: the parent recreates it.
-	// svelte-ignore state_referenced_locally
-	setRealmContext(realm);
+	const initialRealm = untrack(() => realm);
+	setRealmContext(initialRealm);
+	const rootEditor = initialRealm.getValue(rootEditor$);
+	if (rootEditor) setLexicalEditorContext(rootEditor);
 	const contexts = getAllContexts();
 
 	const t = useTranslation();
@@ -70,7 +73,7 @@
 	});
 
 	onMount(() => {
-		const editor = realm.getValue(rootEditor$);
+		const editor = rootEditor;
 		if (!editor || !contentEditable || !wrapperElement) return;
 
 		realm.pub(contentEditableWrapperElement$, wrapperElement);
@@ -82,8 +85,12 @@
 		const unregisterPlaceholder = registerPlaceholder(editor, (visible) => {
 			showPlaceholder = visible;
 		});
+		const unregisterBehaviour = realm
+			.getValue(composerRegistrations$)
+			.map((register) => register(editor, realm));
 
 		return () => {
+			for (const unregister of unregisterBehaviour) unregister();
 			unregisterPlaceholder();
 			detach();
 			realm.pub(contentEditableRef$, null);

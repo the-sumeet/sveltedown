@@ -1,6 +1,6 @@
 import { $createParagraphNode, $createLineBreakNode, type ElementNode } from 'lexical';
 import type * as Mdast from 'mdast';
-import { type MdastImportVisitor } from '../../importMarkdownToLexical.js';
+import type { MdastImportVisitor } from '../../importMarkdownToLexical.js';
 
 const lexicalTypesThatShouldSkipParagraphs = ['listitem', 'admonition'];
 

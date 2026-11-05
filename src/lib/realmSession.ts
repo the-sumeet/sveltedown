@@ -1,4 +1,4 @@
-import { type Realm } from './realm/index.js';
+import type { Realm } from './realm/index.js';
 
 const realmCleanups = new WeakMap<Realm, Set<() => void>>();
 

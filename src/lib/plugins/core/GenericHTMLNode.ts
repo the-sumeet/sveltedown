@@ -9,8 +9,8 @@ import {
 	type SerializedElementNode,
 	type Spread
 } from 'lexical';
-import { type MdxJsxAttribute } from 'mdast-util-mdx-jsx';
-import { type MdxNodeType, type htmlTags } from './MdastHTMLNode.js';
+import type { MdxJsxAttribute } from 'mdast-util-mdx-jsx';
+import type { MdxNodeType, htmlTags } from './MdastHTMLNode.js';
 
 /**
  * All recognized HTML tags.

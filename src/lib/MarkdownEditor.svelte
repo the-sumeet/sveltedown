@@ -3,8 +3,9 @@
 	A rich text Markdown editor. Features are enabled through `plugins`.
 -->
 <script lang="ts">
-	import { onMount, untrack, type Snippet } from 'svelte';
+	import { onMount, untrack, type Component, type Snippet } from 'svelte';
 	import type { EditorState, EditorThemeClasses } from 'lexical';
+	import { defaultSvgIcons, type IconKey } from './defaultSvgIcons.js';
 	import EditorInner from './EditorInner.svelte';
 	import type { ToMarkdownOptions } from './exportMarkdownFromLexical.js';
 	import { createMethods, type FocusOptions, type MarkdownEditorMethods } from './methods.js';
@@ -47,6 +48,8 @@
 		placeholder?: string | Snippet;
 		/** Makes the editor read-only. To only display markdown, render it with a markdown library. */
 		readonly?: boolean;
+		/** Customizes the icons. Return a component, or a string of SVG markup. */
+		iconComponentFor?: (name: IconKey) => Component | string;
 		/** Set to true to stop processing HTML tags. */
 		suppressHtmlProcessing?: boolean;
 		/** A function compatible with the `t` function of i18next, to localize the editor. */
@@ -80,6 +83,7 @@
 		autoFocus = false,
 		placeholder = '',
 		readonly = false,
+		iconComponentFor = (name) => defaultSvgIcons[name],
 		suppressHtmlProcessing = false,
 		translation = defaultTranslation,
 		trim = true,
@@ -124,7 +128,7 @@
 			autoFocus,
 			placeholder,
 			readOnly: readonly,
-			iconComponentFor: () => '',
+			iconComponentFor,
 			suppressHtmlProcessing,
 			translation,
 			trim,

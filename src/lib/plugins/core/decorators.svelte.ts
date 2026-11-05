@@ -46,9 +46,11 @@ export function registerSvelteDecorators(
 
 	const unregister = editor.registerDecoratorListener<SvelteDecorator>((decorators) => {
 		for (const [key, entry] of mounted) {
-			if (!(key in decorators)) remove(key, entry);
+			if (!decorators[key]?.component) remove(key, entry);
 		}
 		for (const [key, decorator] of Object.entries(decorators)) {
+			// Some Lexical nodes, like the horizontal rule, are decorators without any content.
+			if (!decorator?.component) continue;
 			const element = editor.getElementByKey(key);
 			const entry = mounted.get(key);
 			if (entry && entry.element !== element) remove(key, entry);

@@ -45,6 +45,8 @@ export interface ExtensionEditorConfig {
 	historyState?: HistoryState;
 	initialEditorState?: InitialEditorStateType;
 	onError?: (error: Error) => void;
+	/** Lexical extensions that plugins contributed. */
+	extensions?: AnyLexicalExtensionArgument[];
 }
 
 const editorsWithSharedHistory = new WeakSet<LexicalEditor>();
@@ -76,6 +78,7 @@ export function createExtensionEditor({
 	historyMode,
 	historyState,
 	initialEditorState,
+	extensions = [],
 	onError = (error) => {
 		throw error;
 	}
@@ -86,6 +89,8 @@ export function createExtensionEditor({
 			updateOptions: { tag: HISTORIC_TAG }
 		})
 	];
+
+	dependencies.push(...extensions);
 
 	if (parentEditor) {
 		dependencies.push(

@@ -1,6 +1,6 @@
 import { $createLineBreakNode, type ElementNode } from 'lexical';
 import type * as Mdast from 'mdast';
-import { type MdastImportVisitor } from '../../importMarkdownToLexical.js';
+import type { MdastImportVisitor } from '../../importMarkdownToLexical.js';
 
 export const MdastBreakVisitor: MdastImportVisitor<Mdast.Paragraph> = {
 	testNode: 'break',

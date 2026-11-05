@@ -1,10 +1,25 @@
 import type { Component } from 'svelte';
 import type { LexicalEditor } from 'lexical';
-import type { ContainerDirective, LeafDirective, TextDirective } from 'mdast-util-directive';
-import type { MdastEditableNode } from '../core/nestedEditorContext.js';
+import { directiveFromMarkdown, directiveToMarkdown, type Directives } from 'mdast-util-directive';
+import { directive } from 'micromark-extension-directive';
+import { map, Signal } from '../../realm/index.js';
+import { realmPlugin } from '../../realmPlugin.js';
+import {
+	addExportVisitor$,
+	addImportVisitor$,
+	addLexicalNode$,
+	addMdastExtension$,
+	addSyntaxExtension$,
+	addToMarkdownExtension$,
+	directiveDescriptors$,
+	insertDecoratorNode$
+} from '../core/index.js';
+import { $createDirectiveNode, DirectiveNode } from './DirectiveNode.js';
+import { DirectiveVisitor } from './DirectiveVisitor.js';
+import { MdastDirectiveVisitor } from './MdastDirectiveVisitor.js';
+export * from './DirectiveNode.js';
 
-/** The mdast directive nodes. */
-export type Directives = ContainerDirective | LeafDirective | TextDirective;
+export type { Directives };
 
 /** The props passed to a {@link DirectiveDescriptor} `Editor` component. */
 export interface DirectiveEditorProps<T extends Directives = Directives> {
@@ -13,7 +28,7 @@ export interface DirectiveEditorProps<T extends Directives = Directives> {
 	/** The parent lexical editor - use this if you are dealing with the Lexical APIs. */
 	parentEditor: LexicalEditor;
 	/** The Lexical directive node. */
-	lexicalNode: MdastEditableNode;
+	lexicalNode: DirectiveNode;
 	/** The descriptor that activated the editor. */
 	descriptor: DirectiveDescriptor;
 }
@@ -34,3 +49,51 @@ export interface DirectiveDescriptor<T extends Directives = Directives> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- component props are contravariant
 	Editor: Component<DirectiveEditorProps<T>> | Component<any>;
 }
+
+/**
+ * Inserts a new directive node with the published parameters.
+ * @group Directive
+ */
+export const insertDirective$ = Signal<{
+	type: Directives['type'];
+	name: string;
+	attributes?: Directives['attributes'];
+}>((r) => {
+	r.link(
+		r.pipe(
+			insertDirective$,
+			map((payload) => () => $createDirectiveNode({ children: [], ...payload } as Directives))
+		),
+		insertDecoratorNode$
+	);
+});
+
+/**
+ * A plugin that adds support for markdown directives.
+ * @group Directive
+ */
+export const directivesPlugin = realmPlugin<{
+	/** Your custom directive editors. You can also use the built-in `GenericDirectiveEditor`. */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- each descriptor edits its own node type
+	directiveDescriptors: DirectiveDescriptor<any>[];
+	/**
+	 * Displays unknown text directives as normal text. This is handy when colons are used to
+	 * separate words, e.g. in German "Schüler:in".
+	 */
+	escapeUnknownTextDirectives?: boolean;
+}>({
+	update: (realm, params) => {
+		realm.pub(directiveDescriptors$, params?.directiveDescriptors ?? []);
+	},
+	init: (realm, params) => {
+		realm.pubIn({
+			[directiveDescriptors$]: params?.directiveDescriptors ?? [],
+			[addMdastExtension$]: directiveFromMarkdown(),
+			[addSyntaxExtension$]: directive(),
+			[addImportVisitor$]: MdastDirectiveVisitor(params?.escapeUnknownTextDirectives),
+			[addLexicalNode$]: DirectiveNode,
+			[addExportVisitor$]: DirectiveVisitor,
+			[addToMarkdownExtension$]: directiveToMarkdown()
+		});
+	}
+});

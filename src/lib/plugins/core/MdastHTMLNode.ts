@@ -1,5 +1,5 @@
 import type * as Mdast from 'mdast';
-import { type MdxJsxFlowElement, type MdxJsxTextElement } from 'mdast-util-mdx-jsx';
+import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 
 /**
  * A block-level HTML node.

@@ -1,6 +1,6 @@
 import { $createTextNode } from 'lexical';
 import type * as Mdast from 'mdast';
-import { type MdastImportVisitor } from '../../importMarkdownToLexical.js';
+import type { MdastImportVisitor } from '../../importMarkdownToLexical.js';
 
 export const MdastTextVisitor: MdastImportVisitor<Mdast.Text> = {
 	testNode: 'text',

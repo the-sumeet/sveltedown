@@ -6,7 +6,7 @@ import {
 } from 'lexical';
 import type * as Mdast from 'mdast';
 import { type Options as MdastToMarkdownOptions, toMarkdown } from 'mdast-util-to-markdown';
-import { type ImportStatement } from './importMarkdownToLexical.js';
+import type { ImportStatement } from './importMarkdownToLexical.js';
 import { isMdastHTMLNode } from './plugins/core/MdastHTMLNode.js';
 import type { JsxComponentDescriptor } from './plugins/jsx/index.js';
 import { mergeStyleAttributes } from './utils/mergeStyleAttributes.js';

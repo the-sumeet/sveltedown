@@ -15,6 +15,7 @@ import {
 	withLatestFrom
 } from '../../realm/index.js';
 import {
+	type AnyLexicalExtensionArgument,
 	$caretFromPoint,
 	$createParagraphNode,
 	$getRoot,
@@ -89,12 +90,12 @@ import { MdastHTMLVisitor } from './MdastHTMLVisitor.js';
 import { MdastParagraphVisitor } from './MdastParagraphVisitor.js';
 import { MdastRootVisitor } from './MdastRootVisitor.js';
 import { MdastTextVisitor } from './MdastTextVisitor.js';
-import { type DirectiveDescriptor } from '../directives/index.js';
-import { type CodeBlockEditorDescriptor } from '../codeblock/index.js';
+import type { DirectiveDescriptor } from '../directives/index.js';
+import type { CodeBlockEditorDescriptor } from '../codeblock/index.js';
 import { comment, commentFromMarkdown } from '../../mdastUtilHtmlComment.js';
 import { lexicalTheme } from '../../styles/lexicalTheme.js';
-import { type FORMAT } from '../../FormatConstants.js';
-import { type IconKey } from '../../defaultSvgIcons.js';
+import type { FORMAT } from '../../FormatConstants.js';
+import type { IconKey } from '../../defaultSvgIcons.js';
 import { registerRealmCleanup } from '../../realmSession.js';
 import { createExtensionEditor } from './lexicalExtensions.js';
 export * from './MdastHTMLNode.js';
@@ -830,6 +831,49 @@ export const tableCellEditorChildren$ = Cell<Component[]>([]);
 export const addTableCellEditorChild$ = Appender(tableCellEditorChildren$);
 
 /**
+ * Sets up behaviour on one Lexical editor, and returns its teardown. Unlike the component-based
+ * children, this needs no markup, and it can be registered for each kind of editor.
+ * @group Core
+ */
+export type EditorRegistration = (editor: LexicalEditor, realm: Realm) => () => void;
+
+/** @internal */
+export const composerRegistrations$ = Cell<EditorRegistration[]>([]);
+
+/**
+ * Registers behaviour for the root editor.
+ * @group Core
+ */
+export const addComposerRegistration$ = Appender(composerRegistrations$);
+
+/** @internal */
+export const nestedEditorRegistrations$ = Cell<EditorRegistration[]>([]);
+
+/**
+ * Registers behaviour for each nested editor.
+ * @group Core
+ */
+export const addNestedEditorRegistration$ = Appender(nestedEditorRegistrations$);
+
+/** @internal */
+export const tableCellEditorRegistrations$ = Cell<EditorRegistration[]>([]);
+
+/**
+ * Registers behaviour for each table cell editor.
+ * @group Core
+ */
+export const addTableCellEditorRegistration$ = Appender(tableCellEditorRegistrations$);
+
+/** @internal */
+export const lexicalExtensions$ = Cell<AnyLexicalExtensionArgument[]>([]);
+
+/**
+ * Adds a Lexical extension to the root and nested editors.
+ * @group Core
+ */
+export const addLexicalExtension$ = Appender(lexicalExtensions$);
+
+/**
  * Whether the currently active editor is inside a table cell.
  * @group Core
  */
@@ -1123,6 +1167,7 @@ export const corePlugin = realmPlugin<{
 			nodes: [...r.getValue(usedLexicalNodes$), ...(params?.additionalLexicalNodes ?? [])],
 			theme: r.getValue(lexicalTheme$),
 			historyMode: params?.suppressSharedHistory ? 'none' : 'root-shared',
+			extensions: r.getValue(lexicalExtensions$),
 			historyState: r.getValue(historyState$),
 			initialEditorState:
 				params?.editorState === null
