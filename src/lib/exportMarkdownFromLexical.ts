@@ -1,0 +1,563 @@
+import {
+	$isElementNode,
+	type ElementNode as LexicalElementNode,
+	type LexicalNode,
+	type RootNode as LexicalRootNode
+} from 'lexical';
+import type * as Mdast from 'mdast';
+import { type Options as MdastToMarkdownOptions, toMarkdown } from 'mdast-util-to-markdown';
+import { type ImportStatement } from './importMarkdownToLexical.js';
+import { isMdastHTMLNode } from './plugins/core/MdastHTMLNode.js';
+import type { JsxComponentDescriptor } from './plugins/jsx/index.js';
+import { mergeStyleAttributes } from './utils/mergeStyleAttributes.js';
+import {
+	type ComponentImport,
+	createImportDeclaration,
+	getComponentImport,
+	getDeclaredExports,
+	getImportSpecifier,
+	getImportSpecifiers
+} from './plugins/jsx/imports.js';
+
+// Keep this as an interface so API Extractor emits the package-root import.
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ToMarkdownOptions extends MdastToMarkdownOptions {}
+
+/**
+ * Implement this interface in order to process mdast node(s) into a lexical tree.
+ * This is part of the process that converts the editor contents to markdown.
+ * @group Markdown Processing
+ */
+export interface LexicalExportVisitor<LN extends LexicalNode, UN extends Mdast.Nodes> {
+	/**
+	 * Return true if the given node is of the type that this visitor can process.
+	 * You can safely use the node type guard functions (as in $isParagraphNode, $isLinkNode, etc.) here.
+	 */
+	testLexicalNode?(lexicalNode: LexicalNode): lexicalNode is LN;
+
+	/**
+	 * Process the given node and manipulate the mdast tree accordingly.
+	 */
+	visitLexicalNode?(params: {
+		/**
+		 * The lexical node that is being visited.
+		 */
+		lexicalNode: LN;
+		/**
+		 * The mdast parent node that the result of the lexical node conversion should be appended to.
+		 */
+		mdastParent: Mdast.Parent;
+		/**
+		 * A set of actions that can be used to manipulate the mdast tree.
+		 * These are "convenience" utilities that avoid the repetitive boilerplate of creating mdast nodes.
+		 */
+		actions: {
+			/**
+			 * Iterate over the immediate children of a lexical node with the given mdast node as a parent.
+			 */
+			visitChildren(node: LN, mdastParent: Mdast.Parent): void;
+			/**
+			 * Create a new mdast node with the given type, and props.
+			 * Iterate over the immediate children of the current lexical node with the new mdast node as a parent.
+			 * @param hasChildren - true by default. Pass false to skip iterating over the lexical node children.
+			 */
+			addAndStepInto(type: string, props?: Record<string, unknown>, hasChildren?: boolean): void;
+			/**
+			 * Append a new mdast node to a parent node.
+			 * @param parentNode - the mdast parent node to append the new node to.
+			 * @param node - the mdast node to append.
+			 */
+			appendToParent<T extends Mdast.Parent>(
+				parentNode: T,
+				node: T['children'][number]
+			): T['children'][number] | Mdast.Root;
+			/**
+			 * Used when processing JSX nodes so that later, the correct import statement can be added to the document.
+			 * @param componentName - the name of the component that has to be imported.
+			 * @see {@link JsxComponentDescriptor}
+			 */
+			registerReferredComponent(
+				componentName: string | null,
+				importStatement?: ImportStatement
+			): void;
+			/**
+			 * visits the specified lexical node
+			 */
+			visit(node: LexicalNode, parent: Mdast.Parent): void;
+			/**
+			 * Go to next visitor in the visitors chain for potential processing from a different visitor with a lower priority
+			 */
+			nextVisitor(): void;
+		};
+	}): void;
+
+	/**
+	 * Return true if the current node should be joined with the previous node.
+	 * This is necessary due to some inconsistencies between the lexical tree and the mdast tree when it comes to formatting.
+	 */
+	shouldJoin?(prevNode: Mdast.RootContent, currentNode: UN): boolean;
+
+	/**
+	 * Join the current node with the previous node, returning the resulting new node
+	 * For this to be called by the tree walk, shouldJoin must return true.
+	 */
+	join?<T extends Mdast.RootContent>(prevNode: T, currentNode: T): T;
+
+	/**
+	 * Default 0, optional, sets the priority of the visitor. The higher the number, the earlier it will be called.
+	 */
+	priority?: number;
+}
+
+/**
+ * A generic visitor that can be used to process any lexical node.
+ * @group Markdown Processing
+ */
+export type LexicalVisitor = LexicalExportVisitor<LexicalNode, Mdast.RootContent>;
+
+export interface ExportLexicalTreeOptions {
+	root: LexicalRootNode;
+	visitors: LexicalVisitor[];
+	jsxComponentDescriptors: JsxComponentDescriptor[];
+	jsxIsAvailable: boolean;
+	addImportStatements?: boolean;
+}
+
+function isParent(node: unknown): node is Mdast.Parent {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return (node as { children?: any[] }).children instanceof Array;
+}
+
+export function exportLexicalTreeToMdast({
+	root,
+	visitors,
+	jsxComponentDescriptors,
+	jsxIsAvailable,
+	addImportStatements = true
+}: ExportLexicalTreeOptions): Mdast.Root {
+	let unistRoot: Mdast.Root | null = null;
+	const referredComponents = new Set<string>();
+	const knownImportSources = new Map<string, ImportStatement>();
+
+	visitors = [...visitors].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+
+	visit(root, null);
+
+	function registerReferredComponent(
+		componentName: string | null,
+		importStatement?: ImportStatement
+	) {
+		if (
+			componentName === null ||
+			(!getImportSpecifier(importStatement) &&
+				!/^(?!\p{Ll})[\p{ID_Start}_$][\p{ID_Continue}$\u200C\u200D]*$/u.test(componentName))
+		) {
+			return;
+		}
+		referredComponents.add(componentName);
+		if (importStatement) {
+			knownImportSources.set(componentName, { ...importStatement });
+		}
+	}
+
+	function appendToParent<C extends Mdast.RootContent>(
+		parentNode: Mdast.Parent,
+		node: C
+	): C | Mdast.Root {
+		if (unistRoot === null) {
+			unistRoot = node as unknown as Mdast.Root;
+			return unistRoot;
+		}
+
+		if (!isParent(parentNode)) {
+			throw new Error('Attempting to append children to a non-parent');
+		}
+
+		const siblings = parentNode.children;
+		const prevSibling = siblings.at(-1);
+
+		if (prevSibling) {
+			const joinVisitor = visitors.find((visitor) => visitor.shouldJoin?.(prevSibling, node));
+			if (joinVisitor) {
+				const joinedNode = joinVisitor.join!(prevSibling, node) as C;
+				siblings.splice(siblings.length - 1, 1, joinedNode);
+				return joinedNode;
+			}
+		}
+
+		siblings.push(node);
+		return node;
+	}
+
+	function visitChildren(lexicalNode: LexicalElementNode, parentNode: Mdast.Parent) {
+		lexicalNode.getChildren().forEach((lexicalChild) => {
+			visit(lexicalChild, parentNode);
+		});
+	}
+
+	function visit(
+		lexicalNode: LexicalNode,
+		mdastParent: Mdast.Parent | null,
+		usedVisitors: Set<number> | null = null
+	) {
+		const visitor = visitors.find((visitor, index) => {
+			if (usedVisitors?.has(index)) {
+				return false;
+			}
+			return visitor.testLexicalNode?.(lexicalNode);
+		});
+		if (!visitor) {
+			throw new Error(`no lexical visitor found for ${lexicalNode.getType()}`, {
+				cause: lexicalNode
+			});
+		}
+		visitor.visitLexicalNode?.({
+			lexicalNode,
+			mdastParent: mdastParent!,
+			actions: {
+				addAndStepInto(type: string, props = {}, hasChildren = true) {
+					const newNode = {
+						type,
+						...props,
+						...(hasChildren ? { children: [] } : {})
+					};
+					appendToParent(mdastParent!, newNode as unknown as Mdast.RootContent);
+					if ($isElementNode(lexicalNode) && hasChildren) {
+						visitChildren(lexicalNode, newNode as Mdast.Parent);
+					}
+				},
+				appendToParent,
+				visitChildren,
+				visit,
+				registerReferredComponent,
+				nextVisitor() {
+					visit(
+						lexicalNode,
+						mdastParent,
+						(usedVisitors ?? new Set()).add(visitors.indexOf(visitor))
+					);
+					return;
+				}
+			}
+		});
+	}
+
+	if (unistRoot === null) {
+		throw new Error('traversal ended with no root element');
+	}
+
+	const typedRoot = unistRoot as Mdast.Root;
+	const preservedImports = new Set<string>();
+	const collectPreservedImports = (node: Mdast.Nodes) => {
+		if (node.type === 'mdxjsEsm') {
+			for (const specifier of getImportSpecifiers(node)) preservedImports.add(specifier.localName);
+			// MDX hoists nested ESM, so a component declared in a directive must not be imported as well.
+			for (const name of getDeclaredExports(node)) preservedImports.add(name);
+		}
+		if ('children' in node) node.children.forEach(collectPreservedImports);
+	};
+	collectPreservedImports(typedRoot);
+
+	// Decorators such as directives and tables contain MDAST subtrees rather than
+	// Lexical children, so their JSX references never reach the JSX visitor.
+	if (addImportStatements) {
+		const registerNestedComponents = (node: Mdast.Nodes) => {
+			if (
+				(node.type === 'mdxJsxFlowElement' || node.type === 'mdxJsxTextElement') &&
+				node.name !== null
+			) {
+				const descriptor =
+					jsxComponentDescriptors.find((descriptor) => descriptor.name === node.name) ??
+					jsxComponentDescriptors.find((descriptor) => descriptor.name === '*');
+				if (descriptor?.source || getComponentImport(node)) {
+					registerReferredComponent(node.name, getComponentImport(node));
+				}
+			}
+			if ('children' in node) {
+				node.children.forEach(registerNestedComponents);
+			}
+		};
+		registerNestedComponents(typedRoot);
+	}
+
+	// Rebuild only used bindings, never the original ESM block (which can also
+	// contain unused imports or exports). Local nested declarations stay in place.
+	const usedImports = new Map<string, ComponentImport>();
+	for (const componentName of referredComponents) {
+		const known = knownImportSources.get(componentName);
+		const knownSpecifier = getImportSpecifier(known);
+		// A custom editor can rename a component while its node keeps the old import.
+		const stale =
+			knownSpecifier !== undefined && knownSpecifier.localName !== componentName.split('.')[0];
+		const original = stale ? undefined : known;
+		const specifier = stale ? undefined : knownSpecifier;
+		const localName = specifier?.localName ?? componentName;
+		if (preservedImports.has(localName) || usedImports.has(localName)) continue;
+		if (!addImportStatements && (!original || specifier?.inherited)) continue;
+		if (specifier) {
+			usedImports.set(localName, specifier);
+			continue;
+		}
+		const descriptor =
+			jsxComponentDescriptors.find((descriptor) => descriptor.name === componentName) ??
+			original ??
+			jsxComponentDescriptors.find((descriptor) => descriptor.name === '*');
+		if (!descriptor) {
+			throw new Error(`Component ${componentName} is used but not imported`);
+		}
+		if (!descriptor.source) continue;
+		usedImports.set(localName, {
+			source: descriptor.source,
+			defaultExport: descriptor.defaultExport ?? false,
+			kind: descriptor.defaultExport ? 'default' : 'named',
+			importedName: descriptor.defaultExport ? 'default' : localName,
+			localName
+		});
+	}
+
+	const namedImports = new Map<string, ComponentImport[]>();
+	const otherImports: ComponentImport[] = [];
+	for (const specifier of usedImports.values()) {
+		if (specifier.kind === 'named') {
+			const group = namedImports.get(specifier.source) ?? [];
+			group.push(specifier);
+			namedImports.set(specifier.source, group);
+		} else {
+			otherImports.push(specifier);
+		}
+	}
+	const imports = [
+		...Array.from(namedImports.values(), createImportDeclaration),
+		...otherImports.map((specifier) => createImportDeclaration([specifier]))
+	];
+
+	const frontmatter = typedRoot.children.find((child) => child.type === 'yaml');
+	if (frontmatter) {
+		typedRoot.children.splice(typedRoot.children.indexOf(frontmatter) + 1, 0, ...imports);
+	} else {
+		typedRoot.children.unshift(...imports);
+	}
+
+	splitParagraphsAtBlankLines(typedRoot);
+	fixWrappingWhitespace(typedRoot, []);
+	collapseNestedHtmlTags(typedRoot);
+
+	if (!jsxIsAvailable) {
+		convertUnderlineJsxToHtml(typedRoot);
+	}
+
+	return typedRoot;
+}
+
+function collapseNestedHtmlTags(node: Mdast.Nodes) {
+	if ('children' in node && node.children.length > 0) {
+		if (isMdastHTMLNode(node) && node.children.length === 1) {
+			const onlyChild = node.children[0];
+			if (onlyChild.type === 'mdxJsxTextElement' && onlyChild.name === 'span') {
+				onlyChild.attributes.forEach((attribute) => {
+					if (attribute.type === 'mdxJsxAttribute') {
+						const parentAttribute = node.attributes.find(
+							(attr) => attr.type === 'mdxJsxAttribute' && attr.name === attribute.name
+						);
+						if (parentAttribute) {
+							if (attribute.name === 'className') {
+								const mergedClassesSet = new Set([
+									...(parentAttribute.value as string).split(' '),
+									...(attribute.value as string).split(' ')
+								]);
+								parentAttribute.value = Array.from(mergedClassesSet).join(' ');
+							} else if (attribute.name === 'style') {
+								parentAttribute.value = mergeStyleAttributes(
+									parentAttribute.value as string,
+									attribute.value as string
+								);
+							}
+						} else {
+							node.attributes.push(attribute);
+						}
+					}
+				});
+				node.children = onlyChild.children;
+			}
+		}
+
+		node.children.forEach((child) => {
+			collapseNestedHtmlTags(child);
+		});
+	}
+}
+
+function convertUnderlineJsxToHtml(node: Mdast.Parent | Mdast.RootContent) {
+	if (Object.hasOwn(node, 'children')) {
+		const nodeAsParent = node as Mdast.Parent;
+		const newChildren = [] as Mdast.RootContent[];
+		nodeAsParent.children.forEach((child) => {
+			if (child.type === 'mdxJsxTextElement' && child.name === 'u') {
+				newChildren.push(
+					...[
+						{ type: 'html', value: '<u>' } as const,
+						...child.children,
+						{ type: 'html', value: '</u>' } as const
+					]
+				);
+			} else {
+				newChildren.push(child);
+				convertUnderlineJsxToHtml(child);
+			}
+		});
+		nodeAsParent.children = newChildren;
+	}
+}
+
+const BLANK_LINE_REGEXP = /\n(?:[^\S\n]*\n)+/;
+
+// Consecutive line breaks export as a blank line inside a paragraph. List items rely on this, since their paragraphs
+// are imported as a pair of line breaks. Markdown cannot represent a blank line in a paragraph, so split it instead.
+function splitParagraphsAtBlankLines(node: Mdast.Nodes) {
+	if (!('children' in node)) {
+		return;
+	}
+	const children: Mdast.RootContent[] = [];
+	for (const child of node.children) {
+		if (
+			child.type === 'paragraph' &&
+			child.children.some((c) => c.type === 'text' && BLANK_LINE_REGEXP.test(c.value))
+		) {
+			children.push(...splitParagraph(child));
+		} else {
+			splitParagraphsAtBlankLines(child);
+			children.push(child);
+		}
+	}
+	(node as Mdast.Parent).children = children;
+}
+
+function splitParagraph(paragraph: Mdast.Paragraph): Mdast.Paragraph[] {
+	const paragraphs: Mdast.Paragraph[] = [{ type: 'paragraph', children: [] }];
+	for (const child of paragraph.children) {
+		if (child.type !== 'text') {
+			paragraphs.at(-1)!.children.push(child);
+			continue;
+		}
+		child.value.split(BLANK_LINE_REGEXP).forEach((value, index) => {
+			if (index > 0) {
+				paragraphs.push({ type: 'paragraph', children: [] });
+			}
+			if (value) {
+				paragraphs.at(-1)!.children.push({ type: 'text', value });
+			}
+		});
+	}
+	const nonEmptyParagraphs = paragraphs.filter((p) => p.children.length > 0);
+	return nonEmptyParagraphs.length > 0 ? nonEmptyParagraphs : [{ type: 'paragraph', children: [] }];
+}
+
+const TRAILING_WHITESPACE_REGEXP = /\s+$/;
+const LEADING_WHITESPACE_REGEXP = /^\s+/;
+function fixWrappingWhitespace(
+	node: Mdast.Parent | Mdast.RootContent,
+	parentChain: Mdast.Parent[]
+) {
+	if (node.type === 'strong' || node.type === 'emphasis') {
+		const lastChild = node.children.at(-1);
+		if (lastChild?.type === 'text') {
+			const trailingWhitespace = TRAILING_WHITESPACE_REGEXP.exec(lastChild.value);
+			if (trailingWhitespace) {
+				lastChild.value = lastChild.value.replace(TRAILING_WHITESPACE_REGEXP, '');
+				const parent = parentChain.at(-1);
+				if (parent) {
+					parent.children.splice(
+						parent.children.indexOf(node as unknown as Mdast.RootContent) + 1,
+						0,
+						{
+							type: 'text',
+							value: trailingWhitespace[0]
+						}
+					);
+					fixWrappingWhitespace(parent, parentChain.slice(0, -1));
+				}
+			}
+		}
+		const firstChild = node.children.at(0);
+		if (firstChild?.type === 'text') {
+			const leadingWhitespace = LEADING_WHITESPACE_REGEXP.exec(firstChild.value);
+			if (leadingWhitespace) {
+				firstChild.value = firstChild.value.replace(LEADING_WHITESPACE_REGEXP, '');
+
+				const parent = parentChain.at(-1);
+				if (parent) {
+					parent.children.splice(parent.children.indexOf(node as unknown as Mdast.RootContent), 0, {
+						type: 'text',
+						value: leadingWhitespace[0]
+					});
+					fixWrappingWhitespace(parent, parentChain.slice(0, -1));
+				}
+			}
+		}
+	}
+	if ('children' in node && node.children.length > 0) {
+		const nodeAsParent = node as Mdast.Parent;
+		nodeAsParent.children.forEach((child) => {
+			fixWrappingWhitespace(child, [...parentChain, nodeAsParent]);
+		});
+	}
+}
+
+// Keep this as an interface so API Extractor does not rewrite it to mdast-util-to-markdown/lib/types.
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ToMarkdownExtension extends ToMarkdownOptions {}
+
+export interface ExportMarkdownFromLexicalOptions extends ExportLexicalTreeOptions {
+	visitors: LexicalVisitor[];
+
+	/**
+	 * the markdown extensions to use
+	 */
+	toMarkdownExtensions: ToMarkdownExtension[];
+	/**
+	 * The options to pass to `toMarkdown`
+	 */
+	toMarkdownOptions: ToMarkdownOptions;
+}
+
+/**
+ * Configures how the lexical tree is converted to a mdast tree and then to markdown.
+ * @group Markdown Processing
+ */
+export interface LexicalConvertOptions {
+	/**
+	 * The visitors to use when processing the lexical tree
+	 */
+	visitors?: LexicalVisitor[];
+
+	/**
+	 * the markdown extensions to use
+	 */
+	toMarkdownExtensions?: ToMarkdownExtension[];
+	/**
+	 * The options to pass to `toMarkdown`
+	 */
+	toMarkdownOptions?: ToMarkdownOptions;
+}
+
+/**
+ * @internal
+ */
+export function exportMarkdownFromLexical({
+	root,
+	toMarkdownOptions,
+	toMarkdownExtensions,
+	visitors,
+	jsxComponentDescriptors,
+	jsxIsAvailable
+}: ExportMarkdownFromLexicalOptions): string {
+	return (
+		toMarkdown(
+			exportLexicalTreeToMdast({ root, visitors, jsxComponentDescriptors, jsxIsAvailable }),
+			{
+				extensions: toMarkdownExtensions,
+				...toMarkdownOptions
+			}
+		) + '\n'
+	);
+}

@@ -21,12 +21,27 @@ export default defineConfig({
 	// Pre-bundle up front so browser tests are not reloaded mid-run when Vite discovers them.
 	optimizeDeps: {
 		include: [
-			'@codemirror/state',
-			'@codemirror/view',
-			'@codemirror/language',
-			'@codemirror/commands',
-			'@codemirror/lang-markdown',
-			'@lezer/highlight'
+			'lexical',
+			'@lexical/dragon',
+			'@lexical/extension',
+			'@lexical/history',
+			'@lexical/list',
+			'@lexical/rich-text',
+			'@lexical/selection',
+			'@lexical/text',
+			'@lexical/utils',
+			'@lexical/clipboard',
+			'mdast-util-from-markdown',
+			'mdast-util-to-markdown',
+			'mdast-util-gfm-strikethrough',
+			'mdast-util-highlight-mark',
+			'mdast-util-mdx-jsx',
+			'micromark-extension-gfm-strikethrough',
+			'micromark-extension-highlight-mark',
+			'micromark-extension-mdx-jsx',
+			'micromark-extension-mdx-md',
+			'micromark-factory-space',
+			'micromark-util-character'
 		]
 	},
 	test: {
