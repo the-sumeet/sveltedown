@@ -1,0 +1,42 @@
+---
+title: JSX components
+description: Edit MDX JSX components in the document.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+The JSX plugin edits [MDX](https://mdxjs.com) JSX elements, such as `<Callout type="tip">…</Callout>`,
+with editors registered as descriptors:
+
+```ts
+import { GenericJsxEditor, jsxPlugin, type JsxComponentDescriptor } from '@the-sumeet/sveltedown';
+
+const descriptors: JsxComponentDescriptor[] = [
+	{
+		name: 'Callout',
+		kind: 'flow',
+		source: './components',
+		props: [{ name: 'type', type: 'string' }],
+		hasChildren: true,
+		Editor: GenericJsxEditor
+	}
+];
+
+const plugins = [jsxPlugin({ jsxComponentDescriptors: descriptors })];
+```
+
+| Descriptor field | |
+| --- | --- |
+| `name` | The tag name. `*` matches any component, and `null` a fragment. |
+| `kind` | `'flow'` for block components, `'text'` for inline ones. |
+| `source`, `defaultExport` | Where to import the component from. The editor writes the `import` statements for the components the document uses. |
+| `props` | `{ name, type }` with type `'string'`, `'number'` or `'expression'`. |
+| `hasChildren` | Whether the component has editable content. |
+| `Editor` | The editing component. `GenericJsxEditor` edits the props in a popover and the children in a nested editor. |
+
+`kindMismatchPolicy` decides what happens when the parsed kind differs from the descriptor's:
+`'source'` (the default) keeps the parsed kind, `'normalize'` converts it when that loses nothing,
+and `'error'` reports it through `onerror`. `{}` expressions are editable inline. Insert components
+from code by publishing `insertJsx$`.
+
+<EditorDemo client:visible preset="jsx" showSource markdown={"import { Callout, Badge } from './components'\n\n<Callout type=\"tip\">\n  JSX components keep their **content** editable.\n</Callout>\n\nAn inline <Badge color=\"green\">badge</Badge> too."} />

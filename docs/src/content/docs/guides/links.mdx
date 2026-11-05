@@ -1,0 +1,31 @@
+---
+title: Links
+description: Links, auto-linking and the link dialog.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+```ts
+import { linkDialogPlugin, linkPlugin } from '@the-sumeet/sveltedown';
+
+const plugins = [
+	linkPlugin({ validateUrl: (url) => url.startsWith('https://'), disableAutoLink: false }),
+	linkDialogPlugin({ linkAutocompleteSuggestions: ['https://svelte.dev'] })
+];
+```
+
+`linkPlugin` imports and exports links, and turns typed URLs and email addresses into links unless
+`disableAutoLink` is set.
+
+`linkDialogPlugin` adds a popover. It previews the link under the cursor, with buttons to edit,
+copy and remove it, and opens an edit form from the `CreateLink` toolbar button or Ctrl/Cmd+K.
+
+| Option | |
+| --- | --- |
+| `linkAutocompleteSuggestions` | URLs to suggest in the URL field. |
+| `showLinkTitleField` | Show the title field (the hover text). Default `true`. |
+| `onClickLinkCallback(url)` | Called instead of opening the link from the preview. |
+| `onReadOnlyClickLinkCallback(event, node, url)` | Called when a link is clicked in read-only mode. |
+| `LinkDialog` | A component that replaces the dialog. Build it with `linkDialogState$`, `updateLink$`, `cancelLinkEdit$` and `removeLink$`. |
+
+<EditorDemo client:visible preset="links" showSource markdown={'Read the [Svelte docs](https://svelte.dev) or type a URL like https://lexical.dev here.'} />

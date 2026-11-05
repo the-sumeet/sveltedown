@@ -88,6 +88,4 @@
 </script>
 
 <div bind:this={element}></div>
-{#each children.current as Child, index (index)}
-	<Child />
-{/each}
+{#each children.current as Child, index (index)}<Child />{/each}

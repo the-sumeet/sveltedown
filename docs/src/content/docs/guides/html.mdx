@@ -1,0 +1,14 @@
+---
+title: HTML
+description: How HTML in Markdown is handled.
+---
+
+HTML elements in Markdown, such as `<div class="note">…</div>`, become generic HTML nodes: their
+content stays editable, and they keep their attributes. A `<span style="…">` only carries styles,
+so its text is styled instead. `<u>`, `<sup>`, `<sub>` and `<code>` are read as formatting.
+
+The editor has no UI to add or change HTML elements. A toolbar component can do it through the
+Lexical API, with `GenericHTMLNode`'s `getAttributes()` and `updateAttributes()`.
+
+Set `suppressHtmlProcessing` to stop reading HTML altogether. That keeps HTML-like text from
+failing to parse, at the cost of HTML formatting.

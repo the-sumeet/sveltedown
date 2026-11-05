@@ -1,0 +1,32 @@
+---
+title: Search and replace
+description: Search the document with regular expressions and replace matches.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+The search plugin finds and replaces text in the active editor. It has no built-in UI: build one
+with `useEditorSearch()` in a component inside the editor, such as in the toolbar.
+
+```svelte
+<script lang="ts">
+	import { useEditorSearch } from '@the-sumeet/sveltedown';
+
+	const search = useEditorSearch();
+</script>
+
+<input value={search.search} oninput={(event) => search.setSearch(event.currentTarget.value)} />
+<span>{search.cursor} / {search.total}</span>
+<button onclick={search.prev}>Previous</button>
+<button onclick={search.next}>Next</button>
+<button onclick={() => search.replaceAll('replacement')}>Replace all</button>
+```
+
+Terms are case-insensitive regular expressions. `replace` and `replaceAll` insert the replacement
+literally, and `replaceAll` is a single undo step. The search must be open (`openSearch()`) to find
+matches. Its properties, like `total` and `currentRange`, are reactive.
+
+Matches are highlighted with the [CSS Custom Highlight API](https://developer.mozilla.org/docs/Web/API/CSS_Custom_Highlight_API).
+Style them with `::highlight(MdxSearch)` and `::highlight(MdxFocusSearch)`.
+
+<EditorDemo client:visible preset="search" markdown={'Search for alpha, or for a regular expression like a.p.a.\n\nAlpha appears more than once: alpha, ALPHA.'} />

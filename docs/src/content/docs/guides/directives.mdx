@@ -1,0 +1,68 @@
+---
+title: Directives and admonitions
+description: Edit Markdown directives, and use the built-in admonitions.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+[Directives](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444) extend Markdown
+with `:text`, `::leaf` and `:::container` elements. The directives plugin edits them with editors
+you register as descriptors:
+
+```ts
+import {
+	AdmonitionDirectiveDescriptor,
+	GenericDirectiveEditor,
+	directivesPlugin,
+	type DirectiveDescriptor
+} from '@the-sumeet/sveltedown';
+
+const youtube: DirectiveDescriptor = {
+	name: 'youtube',
+	type: 'leafDirective',
+	attributes: ['id'],
+	hasChildren: false,
+	testNode: (node) => node.name === 'youtube',
+	Editor: GenericDirectiveEditor
+};
+
+const plugins = [directivesPlugin({ directiveDescriptors: [youtube, AdmonitionDirectiveDescriptor] })];
+```
+
+`GenericDirectiveEditor` edits the attributes in a popover and the content in a nested editor.
+Set `escapeUnknownTextDirectives` to keep unknown text directives as text, which helps with words
+like "Schüler:in".
+
+## Admonitions
+
+`AdmonitionDirectiveDescriptor` edits Docusaurus-style `note`, `tip`, `info`, `caution` and
+`danger` containers. `InsertAdmonition` and `ChangeAdmonitionType` add and change them from the
+toolbar.
+
+<EditorDemo client:visible preset="directives" showSource markdown={':::note\nAdmonitions hold **formatted** content.\n:::\n\n:::danger\nCareful.\n:::\n\n::youtube{#dQw4w9WgXcQ}'} />
+
+## Custom directive editors
+
+An `Editor` component receives `mdastNode`, `lexicalNode`, `parentEditor` and `descriptor`. To edit
+the directive's content, render `NestedLexicalEditor`:
+
+```svelte
+<script lang="ts">
+	import { NestedLexicalEditor, type DirectiveEditorProps } from '@the-sumeet/sveltedown';
+	import type { ContainerDirective } from 'mdast-util-directive';
+
+	let { mdastNode }: DirectiveEditorProps<ContainerDirective> = $props();
+</script>
+
+<div class="callout">
+	<NestedLexicalEditor
+		block
+		getContent={(node: ContainerDirective) => node.children}
+		getUpdatedMdastNode={(node: ContainerDirective, children) => ({ ...node, children })}
+	/>
+</div>
+```
+
+`useMdastNodeUpdater()` returns a function that updates the directive, for example its attributes,
+and `useLexicalNodeRemove()` one that removes it. Insert directives from code by publishing
+`insertDirective$`.

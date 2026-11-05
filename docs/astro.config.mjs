@@ -18,7 +18,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'sveltedown',
-			description: 'A live-preview Markdown editor for Svelte 5, built on CodeMirror 6.',
+			description: 'A rich text Markdown editor for Svelte 5, built on Lexical.',
 			customCss: ['./src/styles/custom.css'],
 			// Content links are relative so they survive the GitHub Pages base path, which
 			// Starlight doesn't add to Markdown links. The validator can't resolve relative
@@ -27,22 +27,42 @@ export default defineConfig({
 			sidebar: [
 				{
 					label: 'Getting started',
-					items: ['getting-started/installation', 'getting-started/quick-start']
+					items: [
+						'getting-started/installation',
+						'getting-started/quick-start',
+						'guides/migrating'
+					]
 				},
 				{
-					label: 'Guides',
+					label: 'Features',
 					items: [
-						'guides/live-preview',
-						'guides/code-blocks',
+						'guides/basic-formatting',
+						'guides/toolbar',
+						'guides/links',
+						'guides/images',
 						'guides/tables',
+						'guides/code-blocks',
+						'guides/diff-source',
+						'guides/markdown-shortcuts',
+						'guides/directives',
+						'guides/jsx',
+						'guides/front-matter',
+						'guides/search-replace'
+					]
+				},
+				{
+					label: 'Customizing',
+					items: [
 						'guides/theming',
-						'guides/custom-snippets',
-						'guides/codemirror'
+						'guides/html',
+						'guides/error-handling',
+						'guides/i18n',
+						'guides/extending'
 					]
 				},
 				{
 					label: 'Reference',
-					items: ['reference/props', 'reference/keyboard-shortcuts', 'reference/api']
+					items: ['reference/props', 'reference/plugins']
 				}
 			]
 		}),
@@ -57,7 +77,9 @@ export default defineConfig({
 			],
 			// The library source sits outside this project and would otherwise resolve
 			// the root project's copy of Svelte: two runtimes break mounting and reactivity.
-			dedupe: ['svelte']
+			dedupe: ['svelte'],
+			// The library's Svelte dependencies ship .svelte files, which Node can't load directly.
+			noExternal: ['bits-ui', 'svelte-toolbelt', 'runed']
 		}
 	}
 });

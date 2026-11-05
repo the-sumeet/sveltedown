@@ -97,6 +97,13 @@
 	color-scheme: dark;
 }
 
+/* Lexical preserves whitespace in the editor, so the whitespace that Svelte keeps between the
+   elements of a decorator component would show as blank lines. Editors inside decorators set
+   their own white-space. */
+:where(.sd-editor-root [data-lexical-decorator='true']) {
+	white-space: normal;
+}
+
 /* The browser's default <mark> colours don't follow the theme. */
 :where(.sd-content-editable, .sd-nested-editor) mark {
 	background-color: light-dark(#ffe066, #6b5600);

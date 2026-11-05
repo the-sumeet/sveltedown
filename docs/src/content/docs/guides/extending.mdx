@@ -1,0 +1,79 @@
+---
+title: Extending the editor
+description: The reactive state, custom plugins, and custom nodes.
+---
+
+## Reactive state
+
+Like MDXEditor, the editor's state is a graph of cells and signals, named with a `$` suffix:
+`markdown$`, `rootEditor$`, `activeEditor$`, `viewMode$`, `currentFormat$`, `applyFormat$` and
+many more. A realm holds their values for one editor.
+
+In a component inside the editor, such as a toolbar item, read and publish them with hooks. Cell
+values are reactive through `.current`:
+
+```svelte
+<script lang="ts">
+	import { currentBlockType$, insertMarkdown$, useCellValue, usePublisher } from '@the-sumeet/sveltedown';
+
+	const blockType = useCellValue(currentBlockType$);
+	const insertMarkdown = usePublisher(insertMarkdown$);
+</script>
+
+<span>{blockType.current}</span>
+<button onclick={() => insertMarkdown('**hi**')}>Insert</button>
+```
+
+`useCellValues(a$, b$)`, `useCell(a$)` and `useRealm()` are also available. Outside the editor,
+use `remoteRealmPlugin({ editorId })` with `RemoteMDXEditorRealmProvider` and
+`useRemoteMDXEditorRealm(editorId)`.
+
+## Plugins
+
+A plugin publishes into the realm when the editor is created, and again when its options change:
+
+```ts
+import { Cell, createRootEditorSubscription$, realmPlugin } from '@the-sumeet/sveltedown';
+import { KEY_ENTER_COMMAND, COMMAND_PRIORITY_LOW } from 'lexical';
+
+export const enterCount$ = Cell(0);
+
+export const enterCounterPlugin = realmPlugin<{ start?: number }>({
+	init(realm, params) {
+		realm.pub(enterCount$, params?.start ?? 0);
+		realm.pub(createRootEditorSubscription$, (editor) =>
+			editor.registerCommand(
+				KEY_ENTER_COMMAND,
+				() => {
+					realm.pub(enterCount$, realm.getValue(enterCount$) + 1);
+					return false;
+				},
+				COMMAND_PRIORITY_LOW
+			)
+		);
+	}
+});
+```
+
+`init` runs for all plugins, then `postInit`, when the editor is created. `update` runs when the
+props or plugins change.
+
+## Custom nodes
+
+The Markdown conversion uses visitors: `addImportVisitor$` turns mdast nodes into Lexical nodes, and
+`addExportVisitor$` turns them back. Register the Lexical node with `addLexicalNode$`, and the
+syntax with `addSyntaxExtension$`, `addMdastExtension$` and `addToMarkdownExtension$`.
+
+A decorator node renders a Svelte component: its `decorate()` returns
+`{ component, props }`. To give it editable Markdown content, wrap a `NestedLexicalEditor` in
+`NestedEditorsProvider`. The directive and JSX plugins are full examples.
+
+Svelte reserves the `$` prefix in components and `.svelte.ts` modules, so call Lexical's `$`
+functions from plain `.ts` files, or through `import * as lexical from 'lexical'`.
+
+## Lexical
+
+`rootEditor$` and `activeEditor$` hold the Lexical editors. Components inside an editor can also
+get theirs with `useLexicalEditor()`. `addComposerRegistration$`, `addNestedEditorRegistration$`
+and `addTableCellEditorRegistration$` register behaviour on each kind of editor, and
+`addLexicalExtension$` adds Lexical extensions.

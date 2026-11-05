@@ -1,0 +1,23 @@
+---
+title: Front-matter
+description: Edit YAML front-matter in a key-value form.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+```ts
+import { frontmatterPlugin } from '@the-sumeet/sveltedown';
+
+const plugins = [frontmatterPlugin()];
+```
+
+The `InsertFrontmatter` toolbar button adds front-matter, or opens it for editing. The form keeps
+values such as `false`, `0` and empty strings when another field changes, and saving without
+changes keeps the original YAML, comments and formatting included. Structured and multiline values
+are kept but can't be edited in the form; front-matter that the form can't edit safely must be
+changed in the source.
+
+Pass `FrontmatterEditor` to replace the form. It receives the `yaml` (without the `---`
+delimiters) and an `onChange(yaml)` callback, and can follow `frontmatterDialogOpen$`.
+
+<EditorDemo client:visible preset="frontmatter" showSource markdown={'---\ntitle: Hello world\ndraft: false\n---\n\nUse the toolbar button to edit the front-matter.'} />

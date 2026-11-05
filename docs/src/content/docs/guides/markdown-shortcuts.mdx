@@ -1,0 +1,23 @@
+---
+title: Markdown shortcuts
+description: Type Markdown syntax to create blocks and formatting.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+```ts
+import { markdownShortcutPlugin } from '@the-sumeet/sveltedown';
+
+const plugins = [headingsPlugin(), listsPlugin(), linkPlugin(), quotePlugin(), markdownShortcutPlugin()];
+```
+
+The shortcuts only cover the constructs whose plugins are enabled:
+
+- `#` to `######` and a space for a heading
+- `*`, `-` or `1.` and a space for a list, and `[ ]` for a check list
+- `>` and a space for a quote
+- `---` for a thematic break
+- ` ``` `, a language and a space for a code block
+- `**bold**`, `*italic*`, `` `code` `` and `[text](url)` for inline formatting and links
+
+<EditorDemo client:visible preset="shortcuts" height="14rem" showSource />

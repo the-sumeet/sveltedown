@@ -1,0 +1,48 @@
+---
+title: Source and diff modes
+description: Edit the Markdown source, and compare it with an earlier version.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+```svelte
+<script lang="ts">
+	import {
+		BoldItalicUnderlineToggles,
+		DiffSourceToggleWrapper,
+		UndoRedo,
+		diffSourcePlugin,
+		toolbarPlugin
+	} from '@the-sumeet/sveltedown';
+
+	const plugins = [
+		diffSourcePlugin({ viewMode: 'rich-text', diffMarkdown: savedVersion, readOnlyDiff: false }),
+		toolbarPlugin({ toolbarContents: toolbar })
+	];
+</script>
+
+{#snippet toolbar()}
+	<DiffSourceToggleWrapper>
+		<UndoRedo />
+		<BoldItalicUnderlineToggles />
+	</DiffSourceToggleWrapper>
+{/snippet}
+```
+
+`DiffSourceToggleWrapper` adds a toggle between the rich text, diff and source views, and shows
+its children only in rich text mode. Its `options` limit the views, and `SourceToolbar` is a
+snippet for the toolbar in source mode.
+
+| Option | |
+| --- | --- |
+| `viewMode` | The initial view: `'rich-text'`, `'source'` or `'diff'`. |
+| `diffMarkdown` | The earlier version to compare with. |
+| `readOnlyDiff` | Makes the diff view read-only. |
+| `codeMirrorExtensions` | CodeMirror extensions for both views. |
+
+The source keeps your exact text, including unfinished syntax and whitespace, until you go back to
+rich text. `insertMarkdown()` and `setMarkdown()` work on the source in these views, and their
+edits can be undone in CodeMirror. If the Markdown can't be loaded in rich text, the editor shows
+the error and you can fix it in the source.
+
+<EditorDemo client:visible preset="diff" markdown={'# A document\n\nEdit me, then open the diff view.'} />

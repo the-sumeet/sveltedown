@@ -1,9 +1,18 @@
 {
 	"name": "@the-sumeet/sveltedown",
 	"version": "1.2.0",
-	"description": "A live-preview Markdown editor for Svelte 5, built on CodeMirror 6.",
+	"description": "A rich text Markdown editor for Svelte 5: a port of MDXEditor, built on Lexical.",
 	"keywords": [
-		"svelte"
+		"svelte",
+		"svelte5",
+		"markdown",
+		"editor",
+		"wysiwyg",
+		"rich-text",
+		"lexical",
+		"mdx",
+		"mdxeditor",
+		"codemirror"
 	],
 	"license": "MIT",
 	"author": "Sumeet",

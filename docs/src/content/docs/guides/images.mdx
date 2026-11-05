@@ -1,0 +1,45 @@
+---
+title: Images
+description: Insert, upload, resize and edit images.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+```ts
+import { imagePlugin } from '@the-sumeet/sveltedown';
+
+const plugins = [
+	imagePlugin({
+		imageUploadHandler: async (file) => {
+			const body = new FormData();
+			body.append('image', file);
+			const response = await fetch('/uploads', { method: 'POST', body });
+			return (await response.json()).url;
+		},
+		imageAutocompleteSuggestions: ['https://picsum.photos/200/300']
+	})
+];
+```
+
+The `InsertImage` toolbar button opens a dialog to add an image from a URL or, with an
+`imageUploadHandler`, from the user's device. Pasting and dropping image files also goes through the
+upload handler. While an upload runs, the dialog shows its progress; if it fails, the fields stay
+filled in so the user can retry.
+
+| Option | |
+| --- | --- |
+| `imageUploadHandler(file)` | Uploads a file and resolves to its URL. |
+| `imageAutocompleteSuggestions` | URLs to suggest in the dialog. |
+| `imagePreviewHandler(src)` | Resolves the URL to display for a source, for example to sign a private URL. |
+| `disableImageResize` | Hides the resize handles. |
+| `disableImageSettingsButton` | Hides the edit button. |
+| `allowSetImageDimensions` | Adds width and height fields to the dialog. |
+| `ImageDialog`, `EditImageToolbar`, `imagePlaceholder` | Components that replace the dialog, the toolbar on an image, and the placeholder shown while it loads. |
+
+Resized images, and `<img>` tags with a width or height, are written as HTML, since Markdown image
+syntax has no dimensions.
+
+To insert images from code, publish `insertImage$` with `{ src }` or `{ file }`. Custom dialogs
+publish `saveImage$` and read `imageUploadState$`.
+
+<EditorDemo client:visible preset="images" showSource markdown={'Click the image to resize it, or use the toolbar to add one.\n\n![The sveltedown logo](%BASE%/logo.svg "sveltedown")'} />

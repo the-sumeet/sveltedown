@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { AdmonitionKind } from 'lexical';
 	import type { ContainerDirective } from 'mdast-util-directive';
 	import type { RootContent } from 'mdast';
 	import NestedLexicalEditor from '../plugins/core/NestedLexicalEditor.svelte';
@@ -9,7 +8,9 @@
 	let { mdastNode }: DirectiveEditorProps = $props();
 
 	const context = useNestedEditorContext();
-	const className = $derived(context.config.theme.admonition?.[mdastNode.name as AdmonitionKind]);
+	const className = $derived(
+		(context.config.theme as { admonition?: Record<string, string> }).admonition?.[mdastNode.name]
+	);
 </script>
 
 <div class={className}>

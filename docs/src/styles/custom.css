@@ -1,9 +1,7 @@
-/* Match the editor's prose font to the docs. */
+/* Match the editor to the docs theme. */
 .sveltedown {
-	--md-font-family: var(--sl-font);
-	--md-font-mono: var(--sl-font-mono);
-	--md-bg: var(--sl-color-bg);
-	--md-text: var(--sl-color-text);
+	--basePageBg: var(--sl-color-bg);
+	font-family: var(--sl-font);
 }
 
 /* Live demo frame. */
@@ -13,7 +11,7 @@
 	border-radius: 0.5rem;
 	overflow: hidden;
 }
-.demo-editor .cm-scroller {
+.demo-editor .sveltedown-root-contenteditable {
 	min-height: var(--demo-height, 20rem);
 	max-height: 40rem;
 	overflow: auto;

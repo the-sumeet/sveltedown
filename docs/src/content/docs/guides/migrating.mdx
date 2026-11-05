@@ -1,0 +1,23 @@
+---
+title: Migrating from 1.x
+description: Move from the CodeMirror-based 1.x to sveltedown 2.
+---
+
+sveltedown 2 is a different editor. 1.x edited the Markdown text with CodeMirror and hid the
+syntax around the cursor. 2.x is a port of MDXEditor: a rich text editor, built on Lexical, that
+reads and writes Markdown. Markdown is normalized when it's loaded; for example `-` bullets are
+written as `*` unless you set `toMarkdownOptions`.
+
+| 1.x | 2.x |
+| --- | --- |
+| `bind:value` | `bind:markdown` |
+| Everything built in | Features are plugins. Start from the [quick start](../../getting-started/quick-start/). |
+| `onchange(value)` | `onchange(markdown, initialMarkdownNormalize)` |
+| `imageSnippet`, `codeHeaderSnippet`, `tableSnippet` | `imagePlugin` options, code block descriptors, and the table plugin's editor |
+| `extensions` | `codeMirrorPlugin({ codeMirrorExtensions })` for code blocks |
+| `onlinkclick` | `linkDialogPlugin({ onClickLinkCallback, onReadOnlyClickLinkCallback })` |
+| `formatTable`, CodeMirror helpers | Removed |
+| `--md-*` CSS variables | The [theme variables](../theming/) |
+
+To keep the closest 1.x feature set, enable headings, lists, quotes, links, images, tables, thematic
+breaks, code blocks and markdown shortcuts.

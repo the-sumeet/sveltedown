@@ -1,0 +1,17 @@
+---
+title: Translation
+description: Translate the editor's UI.
+---
+
+The UI is in English. Pass `translation`, a function with the signature of i18next's `t`, to
+translate it:
+
+```svelte
+<MarkdownEditor
+	markdown="Hello"
+	translation={(key, defaultValue, interpolations) => i18n.t(key, defaultValue, interpolations)}
+/>
+```
+
+The keys are MDXEditor's, such as `toolbar.bold`, `toolbar.blockTypes.heading` (with a `level`
+interpolation) and `uploadImage.dialogTitle`, so its translation files work as they are.

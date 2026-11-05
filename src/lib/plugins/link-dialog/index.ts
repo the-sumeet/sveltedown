@@ -23,7 +23,9 @@ import {
 	COMMAND_PRIORITY_LOW,
 	KEY_DOWN_COMMAND,
 	KEY_ESCAPE_COMMAND,
+	type LexicalCommand,
 	type LexicalEditor,
+	createCommand,
 	type LexicalNode,
 	type RangeSelection
 } from 'lexical';
@@ -132,6 +134,9 @@ function getPreviewHref(editor: LexicalEditor | null, linkNodeKey: string, url: 
 		return linkNode?.sanitizeUrl(url) ?? 'about:blank';
 	});
 }
+
+/** A command that opens the link dialog. */
+export const OPEN_LINK_DIALOG: LexicalCommand<undefined> = createCommand();
 
 /**
  * Emits when the window is resized.

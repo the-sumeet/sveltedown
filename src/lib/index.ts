@@ -1,4 +1,11 @@
+import type { ComponentProps } from 'svelte';
+import type MarkdownEditorComponent from './MarkdownEditor.svelte';
+import type BoldItalicUnderlineTogglesComponent from './plugins/toolbar/components/BoldItalicUnderlineToggles.svelte';
+import type StrikeThroughSupSubTogglesComponent from './plugins/toolbar/components/StrikeThroughSupSubToggles.svelte';
+
 export { default as MarkdownEditor } from './MarkdownEditor.svelte';
+/** The props of `MarkdownEditor`. */
+export type MarkdownEditorProps = ComponentProps<typeof MarkdownEditorComponent>;
 export type { FocusOptions, MarkdownEditorMethods } from './methods.js';
 export * from './defaultSvgIcons.js';
 
@@ -75,6 +82,12 @@ export { default as InsertThematicBreak } from './plugins/toolbar/components/Ins
 export { default as ListsToggle } from './plugins/toolbar/components/ListsToggle.svelte';
 export { default as UndoRedo } from './plugins/toolbar/components/UndoRedo.svelte';
 export { default as KitchenSinkToolbar } from './plugins/toolbar/components/KitchenSinkToolbar.svelte';
+export type BoldItalicUnderlineTogglesProps = ComponentProps<
+	typeof BoldItalicUnderlineTogglesComponent
+>;
+export type StrikeThroughSupSubTogglesProps = ComponentProps<
+	typeof StrikeThroughSupSubTogglesComponent
+>;
 
 // build your own toolbar items
 export { default as Button } from './plugins/toolbar/primitives/Button.svelte';
@@ -92,6 +105,21 @@ export { default as Separator } from './plugins/toolbar/primitives/Separator.sve
 export { default as SingleChoiceToggleGroup } from './plugins/toolbar/primitives/SingleChoiceToggleGroup.svelte';
 export { default as TooltipWrap } from './plugins/toolbar/primitives/TooltipWrap.svelte';
 export { default as Icon } from './ui/Icon.svelte';
+export { default as Root } from './plugins/toolbar/primitives/Root.svelte';
+export { default as ToggleSingleGroupWithItem } from './plugins/toolbar/primitives/ToggleSingleGroupWithItem.svelte';
+export { default as SelectContent } from './plugins/toolbar/primitives/SelectContent.svelte';
+export { default as SelectItem } from './plugins/toolbar/primitives/SelectItem.svelte';
+export { default as AutoCompleteInput } from './ui/AutoCompleteInput.svelte';
+
+// default editors and dialogs, to wrap or replace
+export {
+	default as EditImageToolbar,
+	type EditImageToolbarProps
+} from './plugins/image/EditImageToolbar.svelte';
+export { default as ImageDialog } from './plugins/image/ImageDialog.svelte';
+export { default as ImagePlaceholder } from './plugins/image/ImagePlaceholder.svelte';
+export { default as LinkDialog } from './plugins/link-dialog/LinkDialog.svelte';
+export { default as LinkEditForm } from './plugins/link-dialog/LinkEditForm.svelte';
 
 // remote realm access
 export * from './plugins/remote/index.js';

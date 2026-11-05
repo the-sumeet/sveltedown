@@ -540,6 +540,16 @@ test.describe('read-only mode', () => {
 	});
 });
 
+test.describe('layout', () => {
+	test('adds no blank lines inside decorators', async ({ page }) => {
+		// Lexical preserves whitespace, which would show the whitespace between Svelte elements.
+		const admonition = page.locator('.sd-admonition-tip');
+		const nested = admonition.locator('.sd-nested-editor');
+		const [outer, inner] = await Promise.all([admonition.boundingBox(), nested.boundingBox()]);
+		expect(outer!.height - inner!.height).toBeLessThanOrEqual(17);
+	});
+});
+
 test.describe('theme', () => {
 	test('data-theme overrides the system preference', async ({ page }) => {
 		await page.getByLabel('Theme').selectOption('dark');

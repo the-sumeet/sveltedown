@@ -1,6 +1,6 @@
 <!-- @component Changes the admonition type. Needs `AdmonitionDirectiveDescriptor` in the `directivesPlugin`. -->
 <script lang="ts">
-	import type { AdmonitionKind } from 'lexical';
+	import type { AdmonitionKind } from '../../../directive-editors/AdmonitionDirectiveDescriptor.js';
 	import { ADMONITION_TYPES } from '../../../directive-editors/AdmonitionDirectiveDescriptor.js';
 	import { useCellValue } from '../../../realm/hooks.js';
 	import { useTranslation } from '../../core/hooks.js';

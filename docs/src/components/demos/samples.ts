@@ -1,56 +1,37 @@
-// Demo documents live here rather than inline in MDX, which strips leading
-// indentation from JSX attribute lines and would flatten nested lists.
+export const kitchenSinkSample = `# Welcome to sveltedown
 
-export const homeSample = `# Try it
+A **rich text** Markdown editor for _Svelte 5_. Format with the toolbar or with Markdown shortcuts: \`inline code\`, ~~strikethrough~~, ==highlights== and [links](https://svelte.dev).
 
-Click into this text. Syntax like **bold**, *italic*, ~~strikethrough~~ and \`inline code\` shows as you move into it, and hides again when you move away. Mod-click a [link](https://svelte.dev "Svelte") to open it.
+> The overriding design goal for Markdown's formatting syntax is to make it as readable as possible.
 
 ## Lists
 
-- Bullets render as dots
-  - Press Tab to nest an item, Shift-Tab to move it back out
-    - Each level alternates the bullet style
-- Press Enter at the end of an item to continue the list
+- Bullet items, which can nest
+  - like this one
+- [x] Finished task
+- [ ] Open task
 
-1. Numbered lists
-2. Keep their numbers
+1. Numbered items
+2. In order
 
-- [x] Task lists with real checkboxes
-- [ ] Press Enter here to add another
+## A table
 
-## Tables and code
+| Item | In stock | Price |
+| :--- | :------: | ----: |
+| Svelte hat | True | 23.99 |
+| Lexical tee | False | 19.99 |
 
-| Feature | Shortcut |
-|:--|--:|
-| **Bold** | \`Mod-b\` |
-| *Italic* | \`Mod-i\` |
-| [Link](https://svelte.dev) | \`Mod-k\` |
-| Line up the pipes | \`Mod-Shift-f\` |
+## Code
 
 \`\`\`ts
-const editor = 'sveltedown'; // long lines scroll sideways instead of wrapping
-console.log(\`Hello from \${editor}\`);
+export function greet(name: string) {
+	return \`Hello, \${name}!\`;
+}
 \`\`\`
 
----
+:::tip
+Try the source and diff views in the top right of the toolbar.
+:::
 
-## Images
-
-![Svelte logo](%BASE%/logo.svg "Click the image to edit its source")
-
-### Headings go down to level six
-`;
-
-export const livePreviewSample = `# Heading
-
-Some **bold**, *italic*, ~~struck~~ and \`inline code\`, plus a [link](https://svelte.dev "Svelte").
-
-- A bullet
-  - Nested a level down
-- [x] A finished task
-- [ ] Click a checkbox to toggle it
-
----
-
-![Svelte logo](%BASE%/logo.svg "Click the image to edit its source")
+![The sveltedown logo](%BASE%/logo.svg "sveltedown")
 `;

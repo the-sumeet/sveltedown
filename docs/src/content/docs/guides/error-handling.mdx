@@ -1,0 +1,18 @@
+---
+title: Error handling
+description: Markdown that can't be loaded, and how to recover.
+---
+
+```svelte
+<MarkdownEditor {markdown} onerror={({ error, source }) => console.warn(error, source)} />
+```
+
+`onerror` is called with the error message and the Markdown that caused it:
+
+- **Missing plugins.** Markdown using a construct whose plugin isn't enabled, such as a table without `tablePlugin`.
+- **Parse errors.** For example HTML-like text that isn't valid. `suppressHtmlProcessing` avoids these, at the cost of HTML formatting.
+- **JSX kind mismatches.** With the `'normalize'` or `'error'` `kindMismatchPolicy`.
+
+The editor then stays empty and keeps the Markdown unchanged, so nothing is lost. With the
+[source mode](../diff-source/), the editor shows the error and the user can fix the Markdown in
+the source, then go back to rich text.

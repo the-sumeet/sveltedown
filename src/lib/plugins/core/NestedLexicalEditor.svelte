@@ -79,6 +79,4 @@
 </script>
 
 <div bind:this={element} class={['sd-nested-editor', contentEditableClass]}></div>
-{#each children.current as Child, index (index)}
-	<Child />
-{/each}
+{#each children.current as Child, index (index)}<Child />{/each}

@@ -1,44 +1,43 @@
 ---
 title: sveltedown
-description: A live-preview Markdown editor for Svelte 5, built on CodeMirror 6.
+description: A rich text Markdown editor for Svelte 5. A Svelte port of MDXEditor, built on Lexical.
 template: splash
 hero:
-  tagline: A live-preview Markdown editor for Svelte 5. The document stays plain Markdown; the syntax steps aside while you write.
+  tagline: A rich text Markdown editor for Svelte 5. Write like in a document editor, get Markdown out.
   actions:
     - text: Get started
       link: getting-started/installation/
       icon: right-arrow
-    - text: Theming
-      link: guides/theming/
+    - text: All features
+      link: guides/basic-formatting/
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 import EditorDemo from '../../components/demos/EditorDemo.svelte';
-import { homeSample } from '../../components/demos/samples';
+import { kitchenSinkSample } from '../../components/demos/samples';
 
-<EditorDemo
-	client:load
-	height="26rem"
-	value={homeSample}
-/>
+<EditorDemo client:load height="30rem" markdown={kitchenSinkSample} />
 
 ## Features
 
 <CardGrid>
-	<Card title="Live preview" icon="pencil">
-		Headings, emphasis, inline code and links render in place. Their syntax shows only where the
-		cursor is.
+	<Card title="Rich text editing" icon="pencil">
+		Headings, lists, check lists, quotes, links, images and tables, edited like a document and
+		stored as Markdown.
 	</Card>
-	<Card title="Rich blocks" icon="puzzle">
-		Images, clickable task checkboxes, code blocks with copy, and GFM tables, all as Svelte
-		components.
+	<Card title="Code, source and diff" icon="seti:code-search">
+		CodeMirror code blocks with syntax highlighting, plus a Markdown source view and a diff
+		against an earlier version.
+	</Card>
+	<Card title="Extensible" icon="puzzle">
+		Plugins, a composable toolbar, directives, admonitions, front-matter, MDX JSX components,
+		and your own Svelte editors for custom nodes.
 	</Card>
 	<Card title="Svelte 5 native" icon="seti:svelte">
-		`bind:value`, runes and snippets. Renders on the server in SvelteKit without touching the
-		DOM.
-	</Card>
-	<Card title="Themeable" icon="seti:css">
-		Every colour, font and size is a CSS variable, with light and dark modes built in.
+		`bind:markdown`, snippets and components throughout. Renders on the server in SvelteKit.
 	</Card>
 </CardGrid>
+
+sveltedown is a port of [MDXEditor](https://mdxeditor.dev) to Svelte. Its plugins, options and
+reactive state keep MDXEditor's names, so its documentation mostly applies too.

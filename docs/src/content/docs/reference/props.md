@@ -1,46 +1,46 @@
 ---
-title: Props
-description: Everything MarkdownEditor accepts.
+title: Props and methods
+description: The props of MarkdownEditor, and the methods available through bind:this.
 ---
 
-```svelte
-<MarkdownEditor bind:value placeholder="…" readonly={false} class="…" onchange={…} extensions={[…]} />
-```
+## Props
 
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `value` | `string` | `''` | The Markdown source. Supports `bind:value`. Setting it from outside replaces only the changed part of the document. |
-| `placeholder` | `string` | `''` | Shown when the document is empty. |
-| `readonly` | `boolean` | `false` | Disables editing. Everything stays rendered; links open with a plain click. |
-| `class` | `string` | `''` | Extra class on the editor element; useful for per-instance [theming](../../guides/theming/). |
-| `onchange` | `(value: string) => void` | | Called after each edit made in the editor. Not called when `value` is set from outside. |
-| `onlinkclick` | `(url: string, event: MouseEvent) => boolean \| void` | | Called with the destination of a link the user follows, in text or in a table. Return `true` once handled; otherwise it opens as usual. See [Links](../../guides/live-preview/#links). |
-| `imageSnippet` | `Snippet<[ImageSnippetProps]>` | | Replaces the image preview. See [Custom snippets](../../guides/custom-snippets/#images). |
-| `codeHeaderSnippet` | `Snippet<[CodeHeaderSnippetProps]>` | | Replaces the code block header. See [Custom snippets](../../guides/custom-snippets/#code-block-header). |
-| `tableSnippet` | `Snippet<[TableSnippetProps]>` | | Replaces the rendered table. See [Custom snippets](../../guides/custom-snippets/#tables). |
-| `extensions` | `Extension[]` | `[]` | Extra CodeMirror extensions, added after the built-ins. See [CodeMirror building blocks](../../guides/codemirror/). |
+| Prop | Type | Default | |
+| --- | --- | --- | --- |
+| `markdown` | `string` | `''` | The Markdown to edit. Supports `bind:markdown`. |
+| `plugins` | `RealmPlugin[]` | `[]` | The plugins. |
+| `onchange` | `(markdown, initialMarkdownNormalize) => void` | | Called when the Markdown changes. |
+| `onerror` | `({ error, source }) => void` | | Called when Markdown can't be loaded. See [error handling](../../guides/error-handling/). |
+| `onblur` | `(event: FocusEvent) => void` | | Called when focus leaves the editor. |
+| `placeholder` | `string \| Snippet` | `''` | Shown when the editor is empty. |
+| `readonly` | `boolean` | `false` | Makes the editor read-only. |
+| `class` | `string` | `''` | Class of the root element and the popup container. |
+| `contentEditableClass` | `string` | `''` | Class of the editable area. |
+| `spellCheck` | `boolean` | `true` | The editable area's `spellcheck`. |
+| `autoFocus` | `boolean \| { defaultSelection?, preventScroll? }` | `false` | Focus the editor when it's mounted. |
+| `toMarkdownOptions` | `ToMarkdownOptions` | `{ listItemIndent: 'one' }` | [`mdast-util-to-markdown` options](https://github.com/syntax-tree/mdast-util-to-markdown#options), such as `bullet`. |
+| `suppressHtmlProcessing` | `boolean` | `false` | Don't read HTML in the Markdown. |
+| `trim` | `boolean` | `true` | Trim the initial Markdown. |
+| `translation` | `Translation` | | Translates the UI. See [translation](../../guides/i18n/). |
+| `iconComponentFor` | `(name: IconKey) => Component \| string` | | Replaces icons. |
+| `lexicalTheme` | `EditorThemeClasses` | | A custom Lexical theme. |
+| `overlayContainer` | `HTMLElement \| null` | `document.body` | Where popups render. |
+| `suppressSharedHistory` | `boolean` | `false` | Disables the shared undo history, for collaboration plugins. |
+| `editorState` | `EditorState \| null` | | The initial Lexical state. `null` skips loading the Markdown. |
+| `additionalLexicalNodes` | `AdditionalLexicalNode[]` | `[]` | Extra Lexical nodes. |
+| `lexicalEditorNamespace` | `string` | `'Sveltedown'` | The Lexical namespace. |
 
-Every prop can change after mount: `readonly`, `placeholder`, `extensions` and the snippets are applied to the running editor without recreating it.
+## Methods
 
-## Snippet prop types
+Get them with `bind:this`:
 
-```ts
-interface ImageSnippetProps {
-	src: string;
-	alt: string;
-	title?: string;
-	view: EditorView;
-}
+| Method | |
+| --- | --- |
+| `getMarkdown()` | The current Markdown. In source and diff mode, the source text. |
+| `setMarkdown(markdown)` | Replaces the Markdown. |
+| `insertMarkdown(markdown)` | Inserts Markdown at the cursor. In source and diff mode, inserts the text. |
+| `focus(callback?, options?)` | Focuses the editor. |
+| `getContentEditableHTML()` | The HTML of the editable area. |
+| `getSelectionMarkdown()` | The Markdown of the selection, or `''`. |
 
-interface CodeHeaderSnippetProps {
-	language: string; // first word of the info string
-	info: string; // the whole info string
-	code: string;
-	view: EditorView;
-}
-
-interface TableSnippetProps {
-	table: TableData; // see Custom snippets → Tables
-	view: EditorView;
-}
-```
+Calls made before the editor exists, such as from a parent's `$effect.pre`, run once it does.

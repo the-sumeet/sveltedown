@@ -1,0 +1,100 @@
+---
+title: Toolbar
+description: Add a toolbar and compose it from the built-in components and primitives.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+The toolbar plugin takes a snippet with the toolbar's contents:
+
+```svelte
+<script lang="ts">
+	import {
+		BoldItalicUnderlineToggles,
+		MarkdownEditor,
+		UndoRedo,
+		toolbarPlugin
+	} from '@the-sumeet/sveltedown';
+
+	const plugins = [toolbarPlugin({ toolbarContents: toolbar, toolbarClassName: 'my-toolbar' })];
+</script>
+
+{#snippet toolbar()}
+	<UndoRedo />
+	<BoldItalicUnderlineToggles />
+{/snippet}
+
+<MarkdownEditor markdown="Hello world" {plugins} />
+```
+
+`toolbarPosition: 'bottom'` puts it below the editor. A snippet declared at the top level of a
+component can be used in its `<script>`.
+
+<EditorDemo client:visible preset="toolbar" markdown={'# Try the toolbar\n\nSelect some text and format it.'} />
+
+## Built-in components
+
+Most need the plugin they act on.
+
+| Component | Needs |
+| --- | --- |
+| `UndoRedo` | |
+| `BoldItalicUnderlineToggles`, `StrikeThroughSupSubToggles` | |
+| `CodeToggle`, `HighlightToggle` | |
+| `BlockTypeSelect` | `headingsPlugin` and/or `quotePlugin` |
+| `ListsToggle` | `listsPlugin` |
+| `CreateLink` | `linkDialogPlugin` |
+| `InsertImage` | `imagePlugin` |
+| `InsertTable` | `tablePlugin` |
+| `InsertThematicBreak` | `thematicBreakPlugin` |
+| `InsertCodeBlock`, `ChangeCodeMirrorLanguage` | `codeBlockPlugin`, `codeMirrorPlugin` |
+| `InsertAdmonition`, `ChangeAdmonitionType` | `directivesPlugin` with `AdmonitionDirectiveDescriptor` |
+| `InsertFrontmatter` | `frontmatterPlugin` |
+| `DiffSourceToggleWrapper` | `diffSourcePlugin`. Wrap the rich text toolbar in it. |
+| `KitchenSinkToolbar` | All of the above, for trying things out |
+
+## Primitives
+
+Build your own toolbar items with `Button`, `ButtonWithTooltip`, `ButtonOrDropdownButton`,
+`Select`, `SingleChoiceToggleGroup`, `MultipleChoiceToggleGroup`, `Separator`, `DialogButton`,
+`TooltipWrap` and `ConditionalContents`. Toggle items take an `icon` name or a `contents` snippet.
+
+`ConditionalContents` shows different contents depending on the editor in focus, for example a
+language select while a code block is being edited:
+
+```svelte
+{#snippet language()}
+	<ChangeCodeMirrorLanguage />
+{/snippet}
+{#snippet richText()}
+	<UndoRedo />
+	<InsertCodeBlock />
+{/snippet}
+
+<ConditionalContents
+	options={[
+		{ when: (editor) => editor?.editorType === 'codeblock', contents: language },
+		{ fallback: richText }
+	]}
+/>
+```
+
+To read or change the editor from your own items, use the [reactive state](../extending/):
+
+```svelte
+<script lang="ts">
+	import { ButtonWithTooltip, insertMarkdown$, usePublisher } from '@the-sumeet/sveltedown';
+
+	const insertMarkdown = usePublisher(insertMarkdown$);
+</script>
+
+<ButtonWithTooltip title="Insert a signature" onclick={() => insertMarkdown('— Sumeet')}>
+	✍️
+</ButtonWithTooltip>
+```
+
+## Icons
+
+Pass `iconComponentFor` to `MarkdownEditor` to replace icons. It receives an icon name and returns a
+Svelte component or a string of SVG markup. The names are listed in the `IconKey` type, and the
+defaults are exported as `defaultSvgIcons`.

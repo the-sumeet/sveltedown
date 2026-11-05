@@ -1,0 +1,43 @@
+---
+title: Basic formatting
+description: Headings, quotes, lists and thematic breaks.
+---
+
+import EditorDemo from '../../../components/demos/EditorDemo.svelte';
+
+The core editor supports **bold**, _italic_, <u>underline</u>, `inline code`,
+~~strikethrough~~, ==highlight==, and <sup>super</sup> and <sub>subscript</sub>. These plugins add
+document structure:
+
+```ts
+import {
+	headingsPlugin,
+	listsPlugin,
+	quotePlugin,
+	thematicBreakPlugin
+} from '@the-sumeet/sveltedown';
+
+const plugins = [headingsPlugin(), listsPlugin(), quotePlugin(), thematicBreakPlugin()];
+```
+
+| Plugin | Adds |
+| --- | --- |
+| `headingsPlugin({ allowedHeadingLevels? })` | `#` to `######` headings. `allowedHeadingLevels` limits the levels in the block type select and the shortcuts. |
+| `quotePlugin()` | Block quotes. |
+| `listsPlugin()` | Bulleted, numbered and check lists, nested with Tab and Shift+Tab at the start of an item. |
+| `thematicBreakPlugin()` | Horizontal rules. |
+
+<EditorDemo client:visible preset="toolbar" showSource markdown={'# Heading\n\nA paragraph with **bold**, *italic* and <u>underline</u>.\n\n> A quote\n\n* A list\n  * nested\n* [ ] and a task\n\n***\n\n1. Numbered'} />
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| Ctrl/Cmd+B, I, U | Bold, italic, underline |
+| Ctrl/Cmd+Alt+1 to 6 | Heading of that level (needs `headingsPlugin`) |
+| Ctrl/Cmd+Alt+0 | Paragraph |
+| Ctrl/Cmd+K | Link dialog (needs `linkDialogPlugin`) |
+| Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl+Y | Undo, redo |
+| Tab, Shift+Tab | Nest or un-nest a list item, at its start |
+
+For typing Markdown syntax, see [Markdown shortcuts](../markdown-shortcuts/).
