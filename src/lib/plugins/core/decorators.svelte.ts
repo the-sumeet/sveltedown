@@ -30,6 +30,7 @@ export class DecoratorState {
 	component = $state.raw() as SvelteDecorator['component'];
 	/** Getters for the current props, for spreading into the component. */
 	readonly props: Record<string, unknown> = {};
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- the cells are the reactive part
 	#cells = new Map<string, PropCell>();
 
 	constructor(decorator: SvelteDecorator) {

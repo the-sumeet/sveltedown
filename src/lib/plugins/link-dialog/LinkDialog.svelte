@@ -1,4 +1,3 @@
-<!-- eslint-disable svelte/no-navigation-without-resolve -- previews links in the document, not app routes -->
 <script lang="ts">
 	import { Popover, Tooltip } from 'bits-ui';
 	import { useCellValue, usePublisher } from '../../realm/hooks.js';
@@ -116,6 +115,8 @@
 								showAnchorTextField={state.withAnchorText}
 							/>
 						{:else}
+							<!-- Links in the document, not app routes. -->
+							<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 							<a
 								class="sd-link-dialog-preview-anchor"
 								data-testid="link-dialog-preview"

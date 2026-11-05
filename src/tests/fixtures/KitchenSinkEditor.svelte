@@ -49,7 +49,6 @@
 		diffSourcePlugin(),
 		markdownShortcutPlugin(),
 		{ postInit: (realm: Realm) => onRealm?.(realm) },
-		// svelte-ignore state_referenced_locally
 		...extraPlugins
 	];
 </script>
