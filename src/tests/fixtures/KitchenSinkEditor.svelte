@@ -1,5 +1,6 @@
 <!-- An editor with every plugin and the full toolbar, for tests. -->
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import {
 		AdmonitionDirectiveDescriptor,
 		KitchenSinkToolbar,
@@ -49,7 +50,7 @@
 		diffSourcePlugin(),
 		markdownShortcutPlugin(),
 		{ postInit: (realm: Realm) => onRealm?.(realm) },
-		...extraPlugins
+		...untrack(() => extraPlugins)
 	];
 </script>
 
