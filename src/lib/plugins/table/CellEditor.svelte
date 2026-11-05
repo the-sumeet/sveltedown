@@ -58,6 +58,9 @@
 				},
 				setActiveCell: (cell) => {
 					props.setActiveCell(cell);
+				},
+				onSaved: () => {
+					saves++;
 				}
 			},
 			persisted
@@ -70,7 +73,12 @@
 		};
 	});
 
+	// A save and a parent undo can both land before the next render, leaving the contents prop
+	// unchanged. Checking again after each save restores the cell in that case too.
+	let saves = $state(0);
+
 	$effect(() => {
+		void saves;
 		restoreCellContents(editor, realm, props.contents, persisted);
 	});
 

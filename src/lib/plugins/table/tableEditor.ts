@@ -190,6 +190,8 @@ export interface CellSource {
 	readonly rowIndex: number;
 	readonly focus: boolean;
 	setActiveCell(cell: CellCoordinates | null): void;
+	/** Called after a save, which can change what the cell must be reconciled against. */
+	onSaved(): void;
 }
 
 /** Connects a cell editor to its table. `persisted` holds the contents last saved or restored. */
@@ -228,6 +230,7 @@ export function registerCellEditor(
 				{ discrete: true, tag: SKIP_DOM_SELECTION_TAG }
 			);
 			parentEditor.dispatchCommand(NESTED_EDITOR_UPDATED_COMMAND, undefined);
+			source.onSaved();
 		});
 	}
 
