@@ -418,11 +418,18 @@ export const setMarkdown$ = Signal<string>((r) => {
 				return;
 			}
 			if (theNewMarkdownValue.trim() === oldMarkdown.trim()) return;
+			if (!editor) return;
 			r.pub(muteChange$, true);
-			editor?.update(
+			editor.update(
 				() => {
-					$getRoot().clear();
-					tryImportingMarkdown(r, $getRoot(), theNewMarkdownValue);
+					try {
+						$getRoot().clear();
+						tryImportingMarkdown(r, $getRoot(), theNewMarkdownValue);
+					} catch (error) {
+						// onUpdate doesn't run for a failed update, and changes would stay muted.
+						r.pub(muteChange$, false);
+						throw error;
+					}
 
 					if (!inFocus) {
 						$setSelection(null);
@@ -1188,10 +1195,12 @@ export const corePlugin = realmPlugin<{
 			initialEditorState:
 				params?.editorState === null
 					? null
-					: () => {
-							const markdown = params?.initialMarkdown.trim() ?? '';
+					: (params?.editorState ??
+						(() => {
+							const initialMarkdown = params?.initialMarkdown ?? '';
+							const markdown = params?.trim ? initialMarkdown.trim() : initialMarkdown;
 							tryImportingMarkdown(r, $getRoot(), markdown);
-						}
+						}))
 		});
 
 		registerRealmCleanup(r, () => {
@@ -1209,6 +1218,21 @@ export const corePlugin = realmPlugin<{
 			registerRealmCleanup(r, () => {
 				clearTimeout(autoFocusTimer);
 			});
+		}
+
+		// The editor starts from the given state, so the markdown cells follow it, not the prop.
+		if (params?.editorState) {
+			const markdown = newEditor.getEditorState().read(() =>
+				exportMarkdownFromLexical({
+					root: $getRoot(),
+					visitors: r.getValue(exportVisitors$),
+					jsxComponentDescriptors: r.getValue(jsxComponentDescriptors$),
+					toMarkdownExtensions: r.getValue(toMarkdownExtensions$),
+					toMarkdownOptions: r.getValue(toMarkdownOptions$),
+					jsxIsAvailable: r.getValue(jsxIsAvailable$)
+				})
+			);
+			r.pub(initialMarkdown$, markdown.trim());
 		}
 
 		r.pub(rootEditor$, newEditor);

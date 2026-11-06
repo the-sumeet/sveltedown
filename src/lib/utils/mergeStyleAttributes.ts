@@ -18,8 +18,10 @@ function styleToObject(style: string): Record<string, string> {
 	const stylePairs = style.split(';').filter((pair) => pair.trim() !== '');
 
 	stylePairs.forEach((pair) => {
-		const [key, value] = pair.split(':').map((part) => part.trim());
-		styleObject[key] = value;
+		// Split on the first colon only: values like url(https://…) contain colons.
+		const colon = pair.indexOf(':');
+		if (colon === -1) return;
+		styleObject[pair.slice(0, colon).trim()] = pair.slice(colon + 1).trim();
 	});
 
 	return styleObject;

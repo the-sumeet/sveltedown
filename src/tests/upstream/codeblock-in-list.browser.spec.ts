@@ -16,7 +16,7 @@ import {
 	registerList
 } from '@lexical/list';
 import { describe, expect, it } from 'vitest';
-import { type CodeBlockEditorDescriptor } from '#lib';
+import type { CodeBlockEditorDescriptor } from '#lib';
 import { roundTrip } from '../helpers.js';
 import { codeBlockPlugin } from '../../lib/plugins/codeblock/index.js';
 import { $createCodeBlockNode, CodeBlockNode } from '../../lib/plugins/codeblock/CodeBlockNode.js';

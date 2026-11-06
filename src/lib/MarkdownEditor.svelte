@@ -212,6 +212,9 @@
 	/** Replaces the markdown value of the editor. */
 	export function setMarkdown(value: string): void {
 		lastMarkdown = value;
+		// The editor doesn't report its own setMarkdown as a change, so keep `bind:markdown` in step here.
+		syncedMarkdown = value;
+		markdown = value;
 		whenReady((ready) => {
 			ready.setMarkdown(value);
 		});

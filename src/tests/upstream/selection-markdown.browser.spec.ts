@@ -35,8 +35,6 @@ import { LexicalListItemVisitor } from '../../lib/plugins/lists/LexicalListItemV
 import { LexicalListVisitor } from '../../lib/plugins/lists/LexicalListVisitor.js';
 import { getSelectionAsMarkdown } from '../../lib/utils/lexicalHelpers.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-
 type SerializedSelectionTestNode = Spread<
 	{
 		value: string;

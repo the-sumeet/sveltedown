@@ -384,7 +384,8 @@ export function importMdastTreeToLexical({
 						}
 					}
 					if (node) {
-						formattingMap.set(node, format ^ (formattingMap.get(mdastParent!) ?? 0));
+						// Clear the format: XOR would turn it on for a closing tag without an opening one.
+						formattingMap.set(node, (formattingMap.get(mdastParent!) ?? 0) & ~format);
 					}
 				},
 				getParentFormatting() {

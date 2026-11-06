@@ -163,6 +163,27 @@ describe('state-backed search and replacement', () => {
 		expect(editor.getMarkdown()).toBe('café $& 🚀');
 	});
 
+	it('matches precomposed characters in the term against the decomposed index', async () => {
+		await renderSearchEditor('caf\u00e9 and \ud55c\uae00');
+		await setSearch('caf\u00e9');
+		await waitForTotal(1);
+		expect(label('Current match').textContent).toBe('caf\u00e9');
+		await setSearch('\ud55c\uae00');
+		await waitForTotal(1);
+	});
+
+	it('only indexes the document while the search is open', async () => {
+		const editor = await renderSearchEditor('first');
+		await expectSoon(() => label('Search indexed text').textContent === 'first');
+		click('Close search');
+		editor.setMarkdown('second');
+		await expectSoon(() => editor.getMarkdown() === 'second');
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		expect(label('Search indexed text').textContent).not.toBe('second');
+		click('Open search');
+		await expectSoon(() => label('Search indexed text').textContent === 'second');
+	});
+
 	it('deletes a whole-node match without leaving an empty text artifact', async () => {
 		const editor = await renderSearchEditor('alpha');
 		await setSearch('alpha');

@@ -112,7 +112,6 @@
 		"@lexical/link": "^0.53.0",
 		"@lexical/list": "^0.53.0",
 		"@lexical/markdown": "^0.53.0",
-		"@lexical/plain-text": "^0.53.0",
 		"@lexical/rich-text": "^0.53.0",
 		"@lexical/selection": "^0.53.0",
 		"@lexical/text": "^0.53.0",
@@ -142,7 +141,6 @@
 		"micromark-extension-mdx-md": "^2.0.0",
 		"micromark-extension-mdxjs": "^3.0.0",
 		"micromark-factory-space": "^2.1.0",
-		"micromark-util-character": "^2.1.1",
-		"micromark-util-symbol": "^2.0.1"
+		"micromark-util-character": "^2.1.1"
 	}
 }

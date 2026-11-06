@@ -2,7 +2,6 @@
 	import { MergeView } from '@codemirror/merge';
 	import { EditorState } from '@codemirror/state';
 	import { EditorView } from '@codemirror/view';
-	import { untrack } from 'svelte';
 	import { useCellValue, useRealm } from '../../realm/hooks.js';
 	import { markdownSourceEditorValue$, onBlur$, readOnly$ } from '../core/index.js';
 	import { COMMON_STATE_CONFIG_EXTENSIONS } from './commonExtensions.js';
@@ -31,7 +30,7 @@
 
 	$effect(() => {
 		const extensions = cmExtensions.current;
-		const isReadOnly = untrack(() => readOnly.current || readOnlyDiff.current);
+		const isReadOnly = readOnly.current || readOnlyDiff.current;
 		const revertParams = isReadOnly
 			? ({ renderRevertControl: undefined, revertControls: undefined } as const)
 			: ({

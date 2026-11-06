@@ -4,6 +4,8 @@ import { render } from 'vitest-browser-svelte';
 import { tick } from 'svelte';
 import { MarkdownEditor, rootEditor$, type RealmPlugin } from '#lib';
 import type { Realm } from '#lib';
+// Svelte modules reserve the `$` prefix, so Lexical's `$` functions are used through the namespace.
+import * as lexical from 'lexical';
 
 const content = () => page.getByRole('textbox', { name: 'editable markdown' });
 
@@ -42,6 +44,11 @@ describe('markdown import export', () => {
 
 	it('keeps html elements, with their attributes', () =>
 		testIdenticalMarkdown('<div class="a">Hello</div>'));
+
+	it('ignores a closing format tag without an opening one', async () => {
+		const markdown = await roundTrip('a</u>b');
+		expect(markdown).not.toContain('<u>');
+	});
 
 	it('drops html comments without failing', async () => {
 		const onerror = vi.fn();
@@ -91,6 +98,39 @@ describe('MarkdownEditor', () => {
 		component.insertMarkdown('*three*');
 		await expect.element(content()).toHaveTextContent('twothree');
 		await vi.waitFor(() => expect(component.getMarkdown().trim()).toBe('**two***three*'));
+	});
+
+	it('keeps bind:markdown in step with setMarkdown', async () => {
+		const onchange = vi.fn();
+		const props = $state({ markdown: 'one', onchange });
+		const { component } = await render(MarkdownEditor, props);
+		component.setMarkdown('two');
+		await expect.element(content()).toHaveTextContent('two');
+		expect(props.markdown).toBe('two');
+		await tick();
+		expect(onchange).not.toHaveBeenCalled();
+	});
+
+	it('starts from the editorState prop instead of the markdown', async () => {
+		const source = lexical.createEditor({
+			onError: (error) => {
+				throw error;
+			}
+		});
+		source.update(
+			() => {
+				const paragraph = lexical.$createParagraphNode();
+				paragraph.append(lexical.$createTextNode('from state'));
+				lexical.$getRoot().append(paragraph);
+			},
+			{ discrete: true }
+		);
+		const { component } = await render(MarkdownEditor, {
+			markdown: 'from markdown',
+			editorState: source.getEditorState()
+		});
+		await expect.element(content()).toHaveTextContent('from state');
+		expect(component.getMarkdown().trim()).toBe('from state');
 	});
 
 	it('returns html and the markdown of the selection', async () => {

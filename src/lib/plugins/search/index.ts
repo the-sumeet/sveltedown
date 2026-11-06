@@ -94,7 +94,8 @@ function* searchText(
 
 	let regex: RegExp;
 	try {
-		regex = new RegExp(searchQuery, 'gi');
+		// The indexed text is decomposed (NFKD), so the term must be too, or 'café' never matches.
+		regex = new RegExp(searchQuery.normalize('NFKD'), 'gi');
 	} catch {
 		return;
 	}
@@ -579,6 +580,8 @@ export const searchPlugin = realmPlugin({
 			refreshSearch(realm, editor);
 
 			const unregisterUpdate = editor.registerUpdateListener(({ dirtyElements, dirtyLeaves }) => {
+				// Indexing walks the whole document, so only do it while the search is open.
+				if (!realm.getValue(searchOpen$)) return;
 				if (dirtyElements.size > 0 || dirtyLeaves.size > 0) refreshSearch(realm, editor);
 			});
 			const unregisterRoot = editor.registerRootListener((rootElement) => {

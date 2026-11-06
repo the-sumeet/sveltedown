@@ -1,4 +1,4 @@
-import { page } from 'vitest/browser';
+import type { page } from 'vitest/browser';
 
 /** Sets an input's value the way typing does, so `bind:value` sees it. */
 export function setValue(element: Element, value: string) {
