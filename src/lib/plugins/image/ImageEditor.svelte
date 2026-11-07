@@ -8,6 +8,7 @@
 		allowSetImageDimensions$,
 		disableImageResize$,
 		editImageToolbarComponent$,
+		imageAlignment$,
 		imagePlaceholder$,
 		imagePreviewHandler$
 	} from './index.js';
@@ -28,6 +29,7 @@
 	const editor = useLexicalEditor();
 	const Placeholder = useCellValue(imagePlaceholder$);
 	const disableResize = useCellValue(disableImageResize$);
+	const alignment = useCellValue(imageAlignment$);
 	const allowDimensions = useCellValue(allowSetImageDimensions$);
 	const previewHandler = useCellValue(imagePreviewHandler$);
 	const readOnly = useCellValue(readOnly$);
@@ -118,7 +120,12 @@
 		{/if}
 	{:else}
 		{@const Toolbar = EditImageToolbar.current}
-		<div bind:this={wrapperElement} class="sd-image-wrapper" data-editor-block-type="image">
+		<div
+			bind:this={wrapperElement}
+			class="sd-image-wrapper"
+			data-editor-block-type="image"
+			data-align={alignment.current}
+		>
 			<div draggable={hasNodeSelection}>
 				<img
 					bind:this={imageElement}

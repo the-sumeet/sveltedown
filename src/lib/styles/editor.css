@@ -1465,6 +1465,14 @@
 	position: relative;
 }
 
+/* On a line of its own, as wide as the image, so the edit toolbar stays on its corner. */
+.sd-image-wrapper[data-align='center'] {
+	display: block;
+	width: fit-content;
+	max-width: 100%;
+	margin-inline: auto;
+}
+
 .sd-image-wrapper[draggable='true'] {
 	cursor: move;
 	/* fallback if grab cursor is unsupported */

@@ -190,6 +190,18 @@ export const imageAutocompleteSuggestions$ = Cell<string[]>([]);
 export const disableImageResize$ = Cell<boolean>(false);
 
 /**
+ * How images sit in their line: at the start (the default) or centered.
+ * @group Image
+ */
+export type ImageAlignment = 'start' | 'center';
+
+/**
+ * Holds the image alignment.
+ * @group Image
+ */
+export const imageAlignment$ = Cell<ImageAlignment>('start');
+
+/**
  * Holds the image upload handler callback.
  * @group Image
  */
@@ -576,6 +588,7 @@ export const imagePlugin = realmPlugin<{
 	disableImageResize?: boolean;
 	disableImageSettingsButton?: boolean;
 	allowSetImageDimensions?: boolean;
+	imageAlignment?: ImageAlignment;
 	imagePreviewHandler?: ImagePreviewHandler;
 	ImageDialog?: Component;
 	EditImageToolbar?: Component<EditImageToolbarProps>;
@@ -594,6 +607,7 @@ export const imagePlugin = realmPlugin<{
 			[disableImageResize$]: Boolean(params?.disableImageResize),
 			[disableImageSettingsButton$]: Boolean(params?.disableImageSettingsButton),
 			[allowSetImageDimensions$]: Boolean(params?.allowSetImageDimensions),
+			[imageAlignment$]: params?.imageAlignment ?? 'start',
 			[imagePreviewHandler$]: params?.imagePreviewHandler ?? null,
 			[editImageToolbarComponent$]: params?.EditImageToolbar ?? EditImageToolbar,
 			[imagePlaceholder$]: params?.imagePlaceholder ?? ImagePlaceholder
@@ -607,6 +621,7 @@ export const imagePlugin = realmPlugin<{
 			[disableImageResize$]: Boolean(params?.disableImageResize),
 			[imagePreviewHandler$]: params?.imagePreviewHandler ?? null,
 			[allowSetImageDimensions$]: Boolean(params?.allowSetImageDimensions),
+			[imageAlignment$]: params?.imageAlignment ?? 'start',
 			[editImageToolbarComponent$]: params?.EditImageToolbar ?? EditImageToolbar,
 			[imagePlaceholder$]: params?.imagePlaceholder ?? ImagePlaceholder
 		});

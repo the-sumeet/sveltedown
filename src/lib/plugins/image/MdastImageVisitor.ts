@@ -17,32 +17,35 @@ export const MdastImageVisitor: MdastImportVisitor<Mdast.Image> = {
 	}
 };
 
+/** An HTML width or height attribute ("300", "300px") in pixels, or undefined. */
+function pixels(value: string | null) {
+	const parsed = parseInt(value ?? '', 10);
+	return Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed;
+}
+
 export const MdastHtmlImageVisitor: MdastImportVisitor<Mdast.Html> = {
 	testNode: (node) => {
 		return node.type === 'html' && node.value.trim().startsWith('<img');
 	},
 	visitNode({ mdastNode, lexicalParent }) {
-		const wrapper = document.createElement('div');
-		wrapper.innerHTML = mdastNode.value;
-		const img = wrapper.querySelector('img');
+		// A template's contents are inert: parsing the tag does not start loading the image.
+		const template = document.createElement('template');
+		template.innerHTML = mdastNode.value;
+		const img = template.content.querySelector('img');
 
 		if (!img) {
 			throw new Error('Invalid HTML image');
 		}
 
-		const src = img.src;
-		const altText = img.alt;
-		const title = img.title;
-		const width = img.width;
-		const height = img.height;
+		// The attributes as written, not the properties: `img.src` is resolved against the page,
+		// which would turn a relative `assets/photo.png` into an absolute URL on the next save.
+		const src = img.getAttribute('src') ?? '';
+		const altText = img.getAttribute('alt') ?? '';
+		const title = img.getAttribute('title') ?? '';
+		const width = pixels(img.getAttribute('width'));
+		const height = pixels(img.getAttribute('height'));
 
-		const image = $createImageNode({
-			src: src || '',
-			altText,
-			title,
-			width: width || undefined,
-			height: height || undefined
-		});
+		const image = $createImageNode({ src, altText, title, width, height });
 
 		if (lexicalParent.getType() === 'root') {
 			const paragraph = $createParagraphNode();

@@ -6,6 +6,7 @@
 		MarkdownEditor,
 		directivesPlugin,
 		imagePlugin,
+		type ImageAlignment,
 		tablePlugin,
 		toolbarPlugin,
 		type ImageUploadHandler,
@@ -20,6 +21,7 @@
 		editor?: MarkdownEditorMethods;
 		onRealm?: (realm: Realm) => void;
 		readonly?: boolean;
+		alignment?: ImageAlignment;
 	}
 
 	let {
@@ -28,13 +30,18 @@
 		suggestions = [],
 		editor = $bindable(),
 		onRealm,
-		readonly = false
+		readonly = false,
+		alignment
 	}: Props = $props();
 
 	// svelte-ignore state_referenced_locally
 	const plugins = [
 		{ init: (realm: Realm) => onRealm?.(realm) },
-		imagePlugin({ imageUploadHandler: upload, imageAutocompleteSuggestions: suggestions }),
+		imagePlugin({
+			imageUploadHandler: upload,
+			imageAutocompleteSuggestions: suggestions,
+			imageAlignment: alignment
+		}),
 		tablePlugin(),
 		directivesPlugin({ directiveDescriptors: [AdmonitionDirectiveDescriptor] }),
 		toolbarPlugin({ toolbarContents: toolbar })
