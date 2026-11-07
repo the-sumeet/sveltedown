@@ -6,7 +6,14 @@
 	import { useTranslation } from '../core/hooks.js';
 	import { editorRootElementRef$, readOnly$ } from '../core/index.js';
 	import type { FrontmatterEditorProps } from './FrontmatterEditor.svelte';
-	import { entriesEqual, parseFrontmatter, serializeFrontmatter } from './frontmatterYaml.js';
+	import {
+		frontmatterEntriesEqual,
+		frontmatterFieldValue,
+		frontmatterValueText,
+		isFrontmatterValueEditable,
+		parseFrontmatter,
+		serializeFrontmatter
+	} from './frontmatterYaml.js';
 	import { frontmatterDialogOpen$, removeFrontmatter$ } from './index.js';
 
 	let { yaml, onChange }: FrontmatterEditorProps = $props();
@@ -25,8 +32,7 @@
 		key: string;
 		text: string;
 		original: unknown;
-		// A single-line input drops line breaks when focused, so multiline strings stay
-		// read-only like structured values.
+		// Structured and multiline values stay read-only and are saved unchanged.
 		preserved: boolean;
 	}
 
@@ -34,35 +40,20 @@
 	const toRow = (key: string, value: unknown): Row => ({
 		id: nextId++,
 		key,
-		text: value === null || value === undefined ? '' : String(value),
+		text: frontmatterValueText(value),
 		original: value,
-		preserved:
-			(typeof value === 'object' && value !== null) ||
-			(typeof value === 'string' && value.includes('\n'))
+		preserved: !isFrontmatterValueEditable(value)
 	});
 
 	let rows = $state(initialEntries.map(({ key, value }) => toRow(key, value)));
 
-	// Text inputs stringify their values. Restore the original YAML type if a field is
-	// unchanged or edited then reverted.
-	function rowValue(row: Row): unknown {
-		if (row.preserved) return row.original;
-		const { original } = row;
-		if (
-			original === null ||
-			typeof original === 'string' ||
-			typeof original === 'number' ||
-			typeof original === 'boolean'
-		) {
-			return row.text === String(original ?? '') ? original : row.text;
-		}
-		return row.text;
-	}
-
 	function submit() {
 		if (readOnly.current || invalid) return;
-		const updated = rows.map((row) => ({ key: row.key, value: rowValue(row) }));
-		if (entriesEqual(updated, initialEntries)) {
+		const updated = rows.map((row) => ({
+			key: row.key,
+			value: frontmatterFieldValue(row.text, row.original)
+		}));
+		if (frontmatterEntriesEqual(updated, initialEntries)) {
 			setOpen(false);
 			return;
 		}

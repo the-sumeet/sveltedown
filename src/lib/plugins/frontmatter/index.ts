@@ -18,6 +18,7 @@ import {
 	$isTextNode,
 	COMMAND_PRIORITY_CRITICAL,
 	type ElementNode,
+	HISTORY_MERGE_TAG,
 	KEY_DOWN_COMMAND,
 	type LexicalEditor
 } from 'lexical';
@@ -28,6 +29,7 @@ import { LexicalFrontmatterVisitor } from './LexicalFrontmatterVisitor.js';
 import { MdastFrontmatterVisitor } from './MdastFrontmatterVisitor.js';
 import FrontmatterEditor, { type FrontmatterEditorProps } from './FrontmatterEditor.svelte';
 export * from './FrontmatterNode.js';
+export * from './frontmatterYaml.js';
 export {
 	default as FrontmatterEditor,
 	type FrontmatterEditorProps
@@ -45,24 +47,50 @@ export const frontmatterEditor$ = Cell<Component<FrontmatterEditorProps>>(Frontm
  */
 export const frontmatterDialogOpen$ = Cell(false);
 
+// A new frontmatter node's YAML: one empty entry, for the form to show a row to fill in.
+const NEW_FRONTMATTER_YAML = '"": ""';
+
 /**
- * Inserts a frontmatter node at the beginning of the markdown document.
+ * Inserts a frontmatter node at the beginning of the markdown document, or opens the existing
+ * one, and opens the frontmatter dialog. If the dialog closes with the new node still empty, the
+ * node is removed again.
  * @group Frontmatter
  */
 export const insertFrontmatter$ = Action((r) => {
+	// Whether this realm inserted a node that the open dialog hasn't saved yet.
+	let pendingInsert = false;
+
 	r.sub(r.pipe(insertFrontmatter$, withLatestFrom(rootEditor$)), ([, rootEditor]) => {
 		rootEditor?.update(() => {
 			const firstItem = $getRoot().getFirstChild();
 			if (!$isFrontmatterNode(firstItem)) {
-				const fmNode = $createFrontmatterNode('"": ""');
+				const fmNode = $createFrontmatterNode(NEW_FRONTMATTER_YAML);
 				if (firstItem) {
 					firstItem.insertBefore(fmNode);
 				} else {
 					$getRoot().append(fmNode);
 				}
+				pendingInsert = true;
 			}
 		});
 		r.pub(frontmatterDialogOpen$, true);
+	});
+
+	r.sub(r.pipe(frontmatterDialogOpen$, withLatestFrom(rootEditor$)), ([open, rootEditor]) => {
+		if (open || !pendingInsert) return;
+		pendingInsert = false;
+		// Queued after any save the editor made before closing, so it sees the saved YAML.
+		// The history merge folds the removal into the insert, so undo doesn't bring back the
+		// empty node.
+		rootEditor?.update(
+			() => {
+				const firstItem = $getRoot().getFirstChild();
+				if ($isFrontmatterNode(firstItem) && firstItem.getYaml() === NEW_FRONTMATTER_YAML) {
+					firstItem.remove();
+				}
+			},
+			{ tag: HISTORY_MERGE_TAG }
+		);
 	});
 });
 

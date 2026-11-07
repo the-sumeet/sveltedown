@@ -15,6 +15,8 @@ import OpenFrontmatter from '../fixtures/OpenFrontmatter.svelte';
 import CustomFrontmatter from '../fixtures/CustomFrontmatter.svelte';
 import OtherFrontmatter from '../fixtures/OtherFrontmatter.svelte';
 import RetainingFrontmatter, { retained } from '../fixtures/RetainingFrontmatter.svelte';
+import InsertFrontmatterTrigger from '../fixtures/InsertFrontmatterTrigger.svelte';
+import SaveAndCloseFrontmatter from '../fixtures/SaveAndCloseFrontmatter.svelte';
 import { expectSoon, setValue } from '../dom.js';
 
 interface SetupOptions {
@@ -342,6 +344,81 @@ describe('frontmatter editor component extension', () => {
 		button('Custom: title: original').click();
 		await new Promise((resolve) => setTimeout(resolve, 50));
 		expect(editor.markdown()).toBe(before);
+	});
+});
+
+describe('inserting frontmatter', () => {
+	async function setupInsert(markdown: string, FrontmatterEditor?: Component<never>) {
+		const props = $state({
+			markdown,
+			plugins: [
+				frontmatterPlugin(
+					FrontmatterEditor ? { FrontmatterEditor: FrontmatterEditor as never } : undefined
+				)
+			],
+			toolbar: InsertFrontmatterTrigger as Component,
+			editor: undefined as MarkdownEditorMethods | undefined
+		});
+		await render(ToolbarEditor, props);
+		await expectSoon(() => props.editor !== undefined);
+		return { props, markdown: () => props.editor!.getMarkdown() };
+	}
+
+	function insert() {
+		(byRole('button', 'Edit frontmatter').element() as HTMLElement).click();
+	}
+
+	const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+	it('removes a new block when the dialog is canceled', async () => {
+		const editor = await setupInsert('Body');
+		insert();
+		await expect.element(byRole('dialog')).toBeInTheDocument();
+		await expectSoon(() => editor.markdown().startsWith('---'));
+		button('Cancel').click();
+		await expect.element(byRole('dialog')).not.toBeInTheDocument();
+		await expectSoon(() => editor.markdown() === 'Body');
+	});
+
+	it('keeps a new block once it is saved', async () => {
+		const editor = await setupInsert('Body');
+		insert();
+		await expect.element(byRole('dialog')).toBeInTheDocument();
+		setValue(keyInputs()[0], 'title');
+		setValue(document.querySelector('input[aria-label="Value"]')!, 'Hello');
+		await save();
+		await settle();
+		expect(editor.markdown()).toBe('---\ntitle: Hello\n---\n\nBody');
+	});
+
+	it('keeps a new block that a custom editor saves and closes in the same tick', async () => {
+		const editor = await setupInsert('Body', SaveAndCloseFrontmatter as Component<never>);
+		insert();
+		const saveAndClose = page.getByRole('button', { name: /^Save and close/ });
+		await expect.element(saveAndClose).toBeInTheDocument();
+		(saveAndClose.element() as HTMLElement).click();
+		await settle();
+		expect(editor.markdown()).toBe('---\ntitle: saved\n---\n\nBody');
+	});
+
+	it('removes a new block that a custom editor closes without saving', async () => {
+		const editor = await setupInsert('Body', SaveAndCloseFrontmatter as Component<never>);
+		insert();
+		await expectSoon(() => editor.markdown().startsWith('---'));
+		(byRole('button', 'Close without saving').element() as HTMLElement).click();
+		await expectSoon(() => editor.markdown() === 'Body');
+		expect(editor.markdown()).toBe('Body');
+	});
+
+	it('keeps existing frontmatter when its dialog closes, even with an empty key', async () => {
+		const markdown = '---\n"": ""\n---\n\nBody';
+		const editor = await setupInsert(markdown);
+		insert();
+		await expect.element(byRole('dialog')).toBeInTheDocument();
+		button('Cancel').click();
+		await expect.element(byRole('dialog')).not.toBeInTheDocument();
+		await settle();
+		expect(editor.markdown()).toBe(markdown);
 	});
 });
 
