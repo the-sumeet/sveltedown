@@ -276,7 +276,8 @@
 	content: '';
 	width: var(--spacing-4);
 	height: var(--spacing-4);
-	top: 0;
+	/* Centred on the first line of text, so it lines up at any line height. */
+	top: calc((1lh - var(--spacing-4)) / 2);
 	left: 0;
 	cursor: pointer;
 	display: block;
@@ -315,7 +316,7 @@
 	border-style: solid;
 	position: absolute;
 	display: block;
-	top: var(--spacing-0_5);
+	top: calc((1lh - var(--spacing-4)) / 2 + var(--spacing-0_5));
 	width: var(--spacing-1);
 	left: var(--spacing-1_5);
 	right: var(--spacing-1_5);
