@@ -1,6 +1,6 @@
 {
 	"name": "@the-sumeet/sveltedown",
-	"version": "2.1.0",
+	"version": "2.2.0",
 	"description": "A rich text Markdown editor for Svelte 5: a port of MDXEditor, built on Lexical.",
 	"keywords": [
 		"svelte",
